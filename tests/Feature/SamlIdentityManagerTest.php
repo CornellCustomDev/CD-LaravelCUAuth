@@ -33,9 +33,9 @@ class SamlIdentityManagerTest extends FeatureTestCase
     {
         $_ENV['SAML_IDP_BASEURL'] = 'https://shibidp-test.cit.cornell.edu/idp';
         $this->artisan('vendor:publish', [
-                '--tag' => 'starterkit:'.CUAuthServiceProvider::INSTALL_PHP_SAML_TAG,
-                '--force' => true,
-            ])->assertSuccessful();
+            '--tag' => 'starterkit:'.CUAuthServiceProvider::INSTALL_PHP_SAML_TAG,
+            '--force' => true,
+        ])->assertSuccessful();
         $this->artisan('cu-auth:generate-keys')->assertSuccessful();
 
         $this->app['config']->set('php-saml-toolkit', require config_path('php-saml-toolkit.php'));
@@ -49,10 +49,10 @@ class SamlIdentityManagerTest extends FeatureTestCase
     {
         $_ENV['SAML_IDP_BASEURL'] = 'https://login-test.weill.cornell.edu/idp';
         $this->artisan('vendor:publish', [
-                '--tag' => 'starterkit:'.CUAuthServiceProvider::INSTALL_PHP_SAML_TAG,
-                '--force' => true,
-            ])->assertSuccessful();
-        $this->artisan('cu-auth:generate-keys', ['--weill' =>true, '--force' => true])->assertSuccessful();
+            '--tag' => 'starterkit:'.CUAuthServiceProvider::INSTALL_PHP_SAML_TAG,
+            '--force' => true,
+        ])->assertSuccessful();
+        $this->artisan('cu-auth:generate-keys', ['--weill' => true, '--force' => true])->assertSuccessful();
 
         $this->app['config']->set('php-saml-toolkit', require config_path('php-saml-toolkit.php'));
 
