@@ -49,13 +49,21 @@ Any pages protected by middleware are automatically redirected to SSO. To direct
 
 ### Certs and Metadata (php-saml)
 
-For using the PHP SAML Toolkit, the SAML keys and certs can be generated with the following command, or as an option from the starter kit installer:
+For using the PHP SAML Toolkit, the SAML keys and certs can be generated with the following command:
 
 ```bash
   php artisan cu-auth:generate-keys
 ```
 
-The SAML metadata can be retrieved at `https://<site-url>/sso/metadata`.
+It is possible to have composer automatically install the keys on `composer install` by adding the following to the `scripts` section of `composer.json`, which will only install the keys if they do not already exist:
+
+```json
+"scripts": {
+    "post-install-cmd": [
+        "@php artisan cu-auth:generate-keys"
+    ]
+}
+```
 
 The default location for the SAML keys and certs is in `storage/app/keys`. This location is configurable in the `config/cu-auth.php` file or by setting the `SAML_CERT_PATH` in `.env`.
 
@@ -85,6 +93,8 @@ $netid = $remoteIdentity->id(); // NetID | CWID
 $email = $remoteIdentity->email(); // Primary email (i.e. netid@cornell.edu)
 $name = $remoteIdentity->name(); // Display name
 ```
+
+The SAML attributes available are based on the CIT-documented list: https://it.cornell.edu/shibboleth/shibboleth-faq.
 
 ### User authorization
 

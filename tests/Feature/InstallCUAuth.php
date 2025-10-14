@@ -14,7 +14,6 @@ class InstallCUAuth extends TestCase
         $this->resetInstallFiles();
     }
 
-
     public function testCanInstallCUAuthConfigFiles()
     {
         $basePath = $this->applicationBasePath();

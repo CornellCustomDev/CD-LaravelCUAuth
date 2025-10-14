@@ -2,6 +2,7 @@
 
 namespace CornellCustomDev\LaravelStarterKit\CUAuth\Tests\Feature;
 
+use CornellCustomDev\LaravelStarterKit\CUAuth\CUAuthServiceProvider;
 use CornellCustomDev\LaravelStarterKit\CUAuth\Events\CUAuthenticated;
 use CornellCustomDev\LaravelStarterKit\CUAuth\Listeners\AuthorizeUser;
 use CornellCustomDev\LaravelStarterKit\CUAuth\Managers\SamlIdentityManager;
@@ -31,6 +32,12 @@ class SamlIdentityManagerTest extends FeatureTestCase
     public function testCanGetSsoUrl()
     {
         $_ENV['SAML_IDP_BASEURL'] = 'https://shibidp-test.cit.cornell.edu/idp';
+        $this->artisan('vendor:publish', [
+            '--tag' => 'starterkit:'.CUAuthServiceProvider::INSTALL_PHP_SAML_TAG,
+            '--force' => true,
+        ])->assertSuccessful();
+        $this->artisan('cu-auth:generate-keys')->assertSuccessful();
+
         $this->app['config']->set('php-saml-toolkit', require config_path('php-saml-toolkit.php'));
 
         $url = (new SamlIdentityManager)->getSsoUrl('/');
@@ -41,6 +48,12 @@ class SamlIdentityManagerTest extends FeatureTestCase
     public function testCanGetWeillSsoUrl()
     {
         $_ENV['SAML_IDP_BASEURL'] = 'https://login-test.weill.cornell.edu/idp';
+        $this->artisan('vendor:publish', [
+            '--tag' => 'starterkit:'.CUAuthServiceProvider::INSTALL_PHP_SAML_TAG,
+            '--force' => true,
+        ])->assertSuccessful();
+        $this->artisan('cu-auth:generate-keys', ['--weill' => true, '--force' => true])->assertSuccessful();
+
         $this->app['config']->set('php-saml-toolkit', require config_path('php-saml-toolkit.php'));
 
         $url = (new SamlIdentityManager)->getSsoUrl('/');
