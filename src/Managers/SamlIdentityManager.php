@@ -17,18 +17,44 @@ class SamlIdentityManager implements IdentityManager
 {
     // Shibboleth fields generally available from either CIT or Weill IdPs.
     public const SAML_FIELDS = [
-        'eduPersonPrimaryAffiliation' => 'urn:oid:1.3.6.1.4.1.5923.1.1.1.5',  // staff|student|...
-        'cn' => 'urn:oid:2.5.4.3',                   // John R. Doe
-        'eduPersonPrincipalName' => 'urn:oid:1.3.6.1.4.1.5923.1.1.1.6',  // netid@cornell.edu
-        'givenName' => 'urn:oid:2.5.4.42',                  // John
-        'sn' => 'urn:oid:2.5.4.4',                   // Doe
-        'displayName' => 'urn:oid:2.16.840.1.113730.3.1.241', // John Doe
-        'uid' => 'urn:oid:0.9.2342.19200300.100.1.1', // netid
-        'eduPersonOrgDN' => 'urn:oid:1.3.6.1.4.1.5923.1.1.1.3',  // o=Cornell University,c=US
-        'mail' => 'urn:oid:0.9.2342.19200300.100.1.3', // alias? email
-        'eduPersonAffiliation' => 'urn:oid:1.3.6.1.4.1.5923.1.1.1.1',  // ['employee', 'staff', ...]
-        'eduPersonScopedAffiliation' => 'urn:oid:1.3.6.1.4.1.5923.1.1.1.9',  // [employee@cornell.edu, staff@cornell.edu, ...]
-        'eduPersonEntitlement' => 'urn:oid:1.3.6.1.4.1.5923.1.1.1.7',  //
+        // staff|student|...
+        'eduPersonPrimaryAffiliation' => 'urn:oid:1.3.6.1.4.1.5923.1.1.1.5',
+
+        // John R. Doe [CIT only]
+        'cn' => 'urn:oid:2.5.4.3',
+
+        // netid@cornell.edu
+        'eduPersonPrincipalName' => 'urn:oid:1.3.6.1.4.1.5923.1.1.1.6',
+
+        // John
+        'givenName' => 'urn:oid:2.5.4.42',
+
+        // Doe
+        'sn' => 'urn:oid:2.5.4.4',
+
+        // John Doe
+        'displayName' => 'urn:oid:2.16.840.1.113730.3.1.241',
+
+        // netid
+        'uid' => 'urn:oid:0.9.2342.19200300.100.1.1',
+
+        // o=Cornell University,c=US [CIT only]
+        'eduPersonOrgDN' => 'urn:oid:1.3.6.1.4.1.5923.1.1.1.3',
+
+        // alias? email
+        'mail' => 'urn:oid:0.9.2342.19200300.100.1.3',
+
+        // ['employee', 'staff', ...] [CIT only]
+        'eduPersonAffiliation' => 'urn:oid:1.3.6.1.4.1.5923.1.1.1.1',
+
+        // [employee@cornell.edu, staff@cornell.edu, ...]
+        'eduPersonScopedAffiliation' => 'urn:oid:1.3.6.1.4.1.5923.1.1.1.9',
+
+        // ? [CIT only]
+        'eduPersonEntitlement' => 'urn:oid:1.3.6.1.4.1.5923.1.1.1.7',
+
+        // Web Developer [Weill only]
+        'title' => 'urn:oid:2.5.4.12',
     ];
 
     public function hasIdentity(): bool
