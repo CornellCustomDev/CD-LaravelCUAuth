@@ -50,6 +50,6 @@ class CUAuthServiceProvider extends ServiceProvider
                 Commands\GenerateKeys::class,
             ]);
         }
-        $this->loadRoutesFrom(__DIR__.'/routes.php');
+        $this->loadRoutesFrom(__DIR__.'/../routes/cu-auth.php');
     }
 }
