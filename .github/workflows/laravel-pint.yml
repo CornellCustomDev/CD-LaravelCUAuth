@@ -1,0 +1,15 @@
+name: PHP Linting
+on: pull_request
+jobs:
+  phplint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Laravel Pint
+        uses: aglipanci/laravel-pint-action@latest
+        with:
+          verboseMode: true
+          testMode: true
+
