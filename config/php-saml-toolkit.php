@@ -267,14 +267,9 @@ return [
         | certificates here.
         |
         */
-        // 'x509certMulti' => [
-        //     'signing' => [
-        //         0 => '<cert1-string>',
-        //     ],
-        //     'encryption' => [
-        //         0 => '<cert2-string>',
-        //     ],
-        // ],
+        'x509certMulti' => (file_exists($cert_path.'/idp_cert_multi.json'))
+            ? json_decode(file_get_contents($cert_path.'/idp_cert_multi.json'), true)
+            : null,
     ],
 
 ];

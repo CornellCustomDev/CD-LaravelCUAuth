@@ -21,10 +21,15 @@ class GenerateKeys extends Command
         File::ensureDirectoryExists($certPath);
 
         $idpCertPath = $certPath.'/idp_cert.pem';
-        if ($force || ! File::exists($idpCertPath)) {
+        $idpMultiCertPath = $certPath.'/idp_cert_multi.json';
+        if ($force || (! File::exists($idpCertPath) && ! File::exists($idpMultiCertPath))) {
             $this->info('Downloading IDP certificate...');
             $idpCertContents = $this->getIdpCert($weill);
-            File::put($idpCertPath, $idpCertContents);
+            if (!empty($idpCertContents['x509certMulti'])) {
+                File::put($idpMultiCertPath, json_encode($idpCertContents['x509certMulti'], JSON_PRETTY_PRINT));
+            } else {
+                File::put($idpCertPath, $idpCertContents['x509cert']);
+            }
         } else {
             $this->info('IDP certificate already exists.');
         }
@@ -57,7 +62,7 @@ class GenerateKeys extends Command
         $this->info('Keys generated successfully.');
     }
 
-    private function getIdpCert(bool $weill): string|false
+    private function getIdpCert(bool $weill): array|false
     {
         if ($weill) {
             $metadataUrl = app()->isProduction()
@@ -72,7 +77,7 @@ class GenerateKeys extends Command
         }
 
         return app()->runningUnitTests()
-            ? $testContent // Placeholder content for testing
-            : IdPMetadataParser::parseRemoteXML($metadataUrl)['idp']['x509cert'];
+            ? ['x509cert' => $testContent] // Placeholder content for testing
+            : IdPMetadataParser::parseRemoteXML($metadataUrl)['idp'];
     }
 }
