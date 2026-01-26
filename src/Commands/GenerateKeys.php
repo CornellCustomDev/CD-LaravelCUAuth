@@ -23,6 +23,10 @@ class GenerateKeys extends Command
         $idpCertPath = $certPath.'/idp_cert.pem';
         $idpMultiCertPath = $certPath.'/idp_cert_multi.json';
         if ($force || (! File::exists($idpCertPath) && ! File::exists($idpMultiCertPath))) {
+            // Remove any existing cert files
+            File::exists($idpCertPath) && File::delete($idpCertPath);
+            File::exists($idpMultiCertPath) && File::delete($idpMultiCertPath);
+
             $this->info('Downloading IDP certificate...');
             $idpCertContents = $this->getIdpCert($weill);
             if (!empty($idpCertContents['x509certMulti'])) {
