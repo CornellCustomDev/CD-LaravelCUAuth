@@ -29,7 +29,7 @@ class GenerateKeys extends Command
 
             $this->info('Downloading IDP certificate...');
             $idpCertContents = $this->getIdpCert($weill);
-            if (!empty($idpCertContents['x509certMulti'])) {
+            if (! empty($idpCertContents['x509certMulti'])) {
                 File::put($idpMultiCertPath, json_encode($idpCertContents['x509certMulti'], JSON_PRETTY_PRINT));
             } else {
                 File::put($idpCertPath, $idpCertContents['x509cert']);
