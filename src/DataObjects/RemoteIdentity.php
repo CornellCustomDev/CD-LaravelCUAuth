@@ -29,8 +29,7 @@ readonly class RemoteIdentity
             idp: $idp,
             uid: $uid,
             principalName: $eduPersonPrincipalName
-                ?? $mail
-                ?? $uid,
+                ?? trim($mail ?? ''),
             displayName: $displayName
                 ?? $cn
                 ?? trim(($givenName ?? '').' '.($sn ?? '')),
