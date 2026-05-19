@@ -33,7 +33,7 @@ readonly class RemoteIdentity
             displayName: $displayName
                 ?? $cn
                 ?? trim(($givenName ?? '').' '.($sn ?? '')),
-            email: $mail ?: null,
+            email: $mail ?? '',
             data: $data,
         );
     }
