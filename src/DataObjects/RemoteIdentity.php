@@ -10,6 +10,7 @@ readonly class RemoteIdentity
         public string $principalName = '',
         public string $displayName = '',
         public string $email = '',
+        private string $mail = '',
         public array $data = [],
     ) {}
 
@@ -33,7 +34,8 @@ readonly class RemoteIdentity
             displayName: $displayName
                 ?? $cn
                 ?? trim(($givenName ?? '').' '.($sn ?? '')),
-            email: $mail ?? '',
+            email: trim($mail ?? ''),
+            mail: trim($mail ?? ''),
             data: $data,
         );
     }
@@ -73,7 +75,7 @@ readonly class RemoteIdentity
      */
     public function email(): string
     {
-        return $this->principalName ?: $this->email;
+        return $this->principalName ?: $this->mail;
     }
 
     /**
