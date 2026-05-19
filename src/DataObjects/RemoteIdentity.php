@@ -48,6 +48,9 @@ readonly class RemoteIdentity
 
     /**
      * Provides an id that is unique across Cornell IdPs.
+     *
+     * @deprecated Use of uniqueUid() should be replaced with use of principalName() for a unique identifier
+     * across IdPs, and id() for an identifier within the IdP.
      */
     public function uniqueUid(): string
     {
@@ -83,11 +86,13 @@ readonly class RemoteIdentity
 
     public function isCornellIdP(): bool
     {
-        return str_contains($this->idp, 'cit.cornell.edu');
+        return str_contains($this->idp, 'cit.cornell.edu')
+            || str_contains($this->principalName, '@cornell.edu');
     }
 
     public function isWeillIdP(): bool
     {
-        return str_contains($this->idp, 'weill.cornell.edu');
+        return str_contains($this->idp, 'weill.cornell.edu')
+            || str_contains($this->principalName, '@med.cornell.edu');
     }
 }
