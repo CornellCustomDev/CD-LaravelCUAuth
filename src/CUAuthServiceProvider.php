@@ -5,6 +5,8 @@ namespace CornellCustomDev\LaravelStarterKit\CUAuth;
 use CornellCustomDev\LaravelStarterKit\CUAuth\Managers\IdentityManager;
 use CornellCustomDev\LaravelStarterKit\CUAuth\Managers\SamlIdentityManager;
 use CornellCustomDev\LaravelStarterKit\CUAuth\Managers\ShibIdentityManager;
+use CornellCustomDev\LaravelStarterKit\CUAuth\Middleware\LivewireAuth;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
 class CUAuthServiceProvider extends ServiceProvider
@@ -51,5 +53,15 @@ class CUAuthServiceProvider extends ServiceProvider
             ]);
         }
         $this->loadRoutesFrom(__DIR__.'/../routes/cu-auth.php');
+
+        if (config('cu-auth.require_livewire_auth')) {
+            if (class_exists('Livewire')) {
+                \Livewire::setUpdateRoute(function ($handle) {
+                    // Only logged in users can post data to livewire components
+                    return Route::post('/livewire/update', $handle)
+                        ->middleware(['web', LivewireAuth::class]);
+                });
+            }
+        }
     }
 }
