@@ -36,7 +36,8 @@ class CUAuth
             return $next($request);
         }
 
-        if (! $this->identityManager->hasIdentity()) {
+        // If we don't have a remote identity, redirect to the SSO login route.
+        if (! $this->identityManager->hasRemoteIdentity()) {
             return redirect()->route('cu-auth.sso-login', ['redirect_url' => $request->fullUrl()]);
         }
 

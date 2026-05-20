@@ -102,7 +102,7 @@ class ShibIdentityManagerTest extends FeatureTestCase
         $this->addCUAuthenticatedListener(authorized: false);
         $request = $this->getApacheAuthRequest('new-user');
         $identityManager = $this->createStub(ShibIdentityManager::class);
-        $identityManager->method('hasIdentity')->willReturn(true);
+        $identityManager->method('hasRemoteIdentity')->willReturn(true);
 
         $response = (new CUAuth($identityManager))
             ->handle($request, fn () => response('OK'));
@@ -213,7 +213,7 @@ class ShibIdentityManagerTest extends FeatureTestCase
         $request = $this->getApacheAuthRequest('new-user');
 
         $identityManager = $this->createStub(ShibIdentityManager::class);
-        $identityManager->method('hasIdentity')->willReturn(true);
+        $identityManager->method('hasRemoteIdentity')->willReturn(true);
         $response = (new CUAuth($identityManager))->handle($request, fn () => response('OK'));
 
         $this->assertTrue($response->isOk());
