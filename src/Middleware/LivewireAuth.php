@@ -7,6 +7,7 @@ use CornellCustomDev\LaravelStarterKit\CUAuth\Managers\IdentityManager;
 use CornellCustomDev\LaravelStarterKit\CUAuth\Middleware\Concerns\ChecksLocalLogin;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Livewire\Livewire;
 use Symfony\Component\HttpFoundation\Response;
 
 class LivewireAuth
@@ -20,7 +21,7 @@ class LivewireAuth
     public static function requireLivewireAuth(): void
     {
         if (class_exists('Livewire\Livewire')) {
-            \Livewire\Livewire::setUpdateRoute(function ($handle) {
+            Livewire::setUpdateRoute(function ($handle) {
                 // Only logged in users can post data to livewire components
                 return Route::post('/livewire/update', $handle)
                     ->middleware(['web', LivewireAuth::class]);

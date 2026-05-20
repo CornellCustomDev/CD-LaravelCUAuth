@@ -6,7 +6,6 @@ use CornellCustomDev\LaravelStarterKit\CUAuth\Managers\IdentityManager;
 use CornellCustomDev\LaravelStarterKit\CUAuth\Managers\SamlIdentityManager;
 use CornellCustomDev\LaravelStarterKit\CUAuth\Managers\ShibIdentityManager;
 use CornellCustomDev\LaravelStarterKit\CUAuth\Middleware\LivewireAuth;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
 class CUAuthServiceProvider extends ServiceProvider
