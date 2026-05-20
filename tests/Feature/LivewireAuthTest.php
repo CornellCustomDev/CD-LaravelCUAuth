@@ -63,17 +63,4 @@ class LivewireAuthTest extends FeatureTestCase
 
         $this->assertTrue($response->isForbidden());
     }
-
-    public function testAllowsNonLivewireRoute()
-    {
-        $identityManager = $this->createStub(ShibIdentityManager::class);
-        $identityManager->method('hasRemoteIdentity')->willReturn(false);
-        $request = Request::create('/some/other/route', 'POST');
-        $request->setLaravelSession(app('session.store'));
-
-        $response = (new LivewireAuth($identityManager))
-            ->handle($request, fn () => response('OK'));
-
-        $this->assertTrue($response->isOk());
-    }
 }

@@ -55,13 +55,7 @@ class CUAuthServiceProvider extends ServiceProvider
         $this->loadRoutesFrom(__DIR__.'/../routes/cu-auth.php');
 
         if (config('cu-auth.require_livewire_auth')) {
-            if (class_exists('Livewire')) {
-                \Livewire::setUpdateRoute(function ($handle) {
-                    // Only logged in users can post data to livewire components
-                    return Route::post('/livewire/update', $handle)
-                        ->middleware(['web', LivewireAuth::class]);
-                });
-            }
+            LivewireAuth::requireLivewireAuth();
         }
     }
 }
