@@ -62,9 +62,7 @@ class SamlIdentityManager implements IdentityManager
         return ! empty($this->getIdentity());
     }
 
-    /**
-     * @deprecated Use hasRemoteIdentity() instead
-     */
+    /** {@inheritDoc} */
     public function hasIdentity(): bool
     {
         return $this->hasRemoteIdentity();
