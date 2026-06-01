@@ -70,10 +70,11 @@ class SamlIdentityManager implements IdentityManager
 
     public function getIdentity(): ?RemoteIdentity
     {
-        /** @var RemoteIdentity|null $remoteIdentity */
-        $remoteIdentity = session()->get('remoteIdentity');
+        $stored = session()->get('remoteIdentity');
 
-        return $remoteIdentity;
+        return is_array($stored)
+            ? RemoteIdentity::fromArray($stored)
+            : null;
     }
 
     /**
@@ -82,7 +83,7 @@ class SamlIdentityManager implements IdentityManager
     public function storeIdentity(): ?RemoteIdentity
     {
         $remoteIdentity = $this->retrieveIdentity();
-        session()->put('remoteIdentity', $remoteIdentity);
+        session()->put('remoteIdentity', $remoteIdentity->toArray());
 
         return $remoteIdentity;
     }

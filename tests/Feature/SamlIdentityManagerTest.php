@@ -3,6 +3,7 @@
 namespace CornellCustomDev\LaravelStarterKit\CUAuth\Tests\Feature;
 
 use CornellCustomDev\LaravelStarterKit\CUAuth\CUAuthServiceProvider;
+use CornellCustomDev\LaravelStarterKit\CUAuth\DataObjects\RemoteIdentity;
 use CornellCustomDev\LaravelStarterKit\CUAuth\Events\CUAuthenticated;
 use CornellCustomDev\LaravelStarterKit\CUAuth\Listeners\AuthorizeUser;
 use CornellCustomDev\LaravelStarterKit\CUAuth\Managers\SamlIdentityManager;
@@ -156,5 +157,37 @@ class SamlIdentityManagerTest extends FeatureTestCase
         $this->assertTrue(auth()->check());
         $this->assertEquals('Test User', auth()->user()->name);
         $this->assertEquals('cwid@med.cornell.edu', auth()->user()->email);
+    }
+
+    public function testGetIdentityReconstructsRemoteIdentityFromSessionArray(): void
+    {
+        session()->put('remoteIdentity', [
+            'idp' => 'cit.cornell.edu',
+            'uid' => 'netid',
+            'principalName' => 'netid@cornell.edu',
+            'displayName' => 'Test User',
+            'mail' => '',
+            'data' => [],
+        ]);
+
+        $identity = (new SamlIdentityManager)->getIdentity();
+
+        $this->assertInstanceOf(RemoteIdentity::class, $identity);
+        $this->assertEquals('netid', $identity->id());
+        $this->assertEquals('netid@cornell.edu', $identity->principalName());
+    }
+
+    public function testStoreIdentityStoresArrayInSession(): void
+    {
+        config(['php-saml-toolkit.idp.entityId' => 'https://shibidp-test.cit.cornell.edu/idp/shibboleth']);
+        $identity = (new SamlIdentityManager)->retrieveIdentity([
+            'uid' => ['netid'],
+            'eduPersonPrincipalName' => ['netid@cornell.edu'],
+        ]);
+        session()->put('remoteIdentity', $identity->toArray());
+
+        $stored = session()->get('remoteIdentity');
+        $this->assertIsArray($stored);
+        $this->assertEquals('netid', $stored['uid']);
     }
 }

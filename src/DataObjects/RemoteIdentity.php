@@ -38,6 +38,36 @@ readonly class RemoteIdentity
     }
 
     /**
+     * For session serialization
+     */
+    public function toArray(): array
+    {
+        return [
+            'idp' => $this->idp,
+            'uid' => $this->uid,
+            'principalName' => $this->principalName,
+            'displayName' => $this->displayName,
+            'mail' => $this->mail,
+            'data' => $this->data,
+        ];
+    }
+
+    /**
+     * For session deserialization
+     */
+    public static function fromArray(array $data): self
+    {
+        return new self(
+            idp: $data['idp'] ?? '',
+            uid: $data['uid'] ?? '',
+            principalName: $data['principalName'] ?? '',
+            displayName: $data['displayName'] ?? '',
+            mail: $data['mail'] ?? '',
+            data: $data['data'] ?? [],
+        );
+    }
+
+    /**
      * Provides an id that is unique within the IdP, i.e., NetID or CWID
      */
     public function id(): string

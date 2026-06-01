@@ -2,6 +2,7 @@
 
 namespace CornellCustomDev\LaravelStarterKit\CUAuth\Tests\Feature;
 
+use CornellCustomDev\LaravelStarterKit\CUAuth\DataObjects\RemoteIdentity;
 use CornellCustomDev\LaravelStarterKit\CUAuth\Events\CUAuthenticated;
 use CornellCustomDev\LaravelStarterKit\CUAuth\Http\Controllers\AuthController;
 use CornellCustomDev\LaravelStarterKit\CUAuth\Listeners\AuthorizeUser;
@@ -217,6 +218,36 @@ class ShibIdentityManagerTest extends FeatureTestCase
         $response = (new CUAuth($identityManager))->handle($request, fn () => response('OK'));
 
         $this->assertTrue($response->isOk());
+    }
+
+    public function testStoreIdentityStoresArrayInSession(): void
+    {
+        config(['cu-auth.remote_user_override' => 'netid']);
+        $identityManager = new ShibIdentityManager;
+
+        $identityManager->storeIdentity();
+
+        $stored = session()->get('remoteIdentity');
+        $this->assertIsArray($stored);
+        $this->assertEquals('netid', $stored['uid']);
+    }
+
+    public function testGetIdentityReconstructsRemoteIdentityFromSessionArray(): void
+    {
+        session()->put('remoteIdentity', [
+            'idp' => 'https://shibidp.cit.cornell.edu/idp/shibboleth',
+            'uid' => 'netid',
+            'principalName' => 'netid@cornell.edu',
+            'displayName' => 'Test User',
+            'mail' => '',
+            'data' => [],
+        ]);
+
+        $identity = (new ShibIdentityManager)->getIdentity();
+
+        $this->assertInstanceOf(RemoteIdentity::class, $identity);
+        $this->assertEquals('netid', $identity->id());
+        $this->assertEquals('netid@cornell.edu', $identity->principalName());
     }
 
     public function testShibIdentity()

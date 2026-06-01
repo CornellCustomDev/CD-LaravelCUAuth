@@ -42,20 +42,17 @@ class ShibIdentityManager implements IdentityManager
 
     public function getIdentity(): ?RemoteIdentity
     {
-        /** @var RemoteIdentity|null $remoteIdentity */
-        $remoteIdentity = session()->get('remoteIdentity');
+        $stored = session()->get('remoteIdentity');
 
-        if (empty($remoteIdentity)) {
-            $remoteIdentity = $this->storeIdentity();
-        }
-
-        return $remoteIdentity;
+        return is_array($stored)
+            ? RemoteIdentity::fromArray($stored)
+            : null;
     }
 
     public function storeIdentity(): ?RemoteIdentity
     {
         $remoteIdentity = $this->retrieveIdentity();
-        session()->put('remoteIdentity', $remoteIdentity);
+        session()->put('remoteIdentity', $remoteIdentity?->toArray());
 
         return $remoteIdentity;
     }
