@@ -286,7 +286,7 @@ class ShibIdentityManagerTest extends FeatureTestCase
             'Shib_Identity_Provider' => 'https://shibidp-test.cit.cornell.edu/idp/shibboleth',
             'uid' => 'netid',
             'displayName' => 'Test User',
-            'mail' => 'netid@cornell.edu',
+            'eduPersonPrincipalName' => 'netid@cornell.edu',
         ]);
         $event = new CUAuthenticated('netid@cornell.edu');
         $listener = new AuthorizeUser($identityManager);
