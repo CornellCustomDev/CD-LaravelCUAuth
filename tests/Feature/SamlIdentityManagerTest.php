@@ -147,7 +147,7 @@ class SamlIdentityManagerTest extends FeatureTestCase
         $remoteIdentity = $identityManager->retrieveIdentity([
             'uid' => ['netid'],
             'displayName' => ['Test User'],
-            'mail' => ['cwid@med.cornell.edu'],
+            'eduPersonPrincipalName' => ['cwid@med.cornell.edu'],
         ]);
         $event = new CUAuthenticated('netid@cornell.edu');
         $listener = new AuthorizeUser($identityManager);
