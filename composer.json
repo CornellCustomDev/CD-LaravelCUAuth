@@ -31,12 +31,7 @@
         ],
         "clear": "@php vendor/bin/testbench package:purge-skeleton --ansi",
         "prepare": "@php vendor/bin/testbench package:discover --ansi",
-        "test": "@php vendor/bin/phpunit -c ./ --color",
-        "sync": "@php bin/sync",
-        "ci": [
-            "@post-autoload-dump",
-            "@test"
-        ]
+        "test": "@php vendor/bin/phpunit -c ./ --color"
     },
     "config": {
         "sort-packages": true

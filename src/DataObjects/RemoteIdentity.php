@@ -32,9 +32,9 @@ readonly class RemoteIdentity
             displayName: $displayName
                 ?? $cn
                 ?? trim(($givenName ?? '').' '.($sn ?? '')),
-            email: $eduPersonPrincipalName
-                ?? $mail
-                ?? '',
+            email: trim($eduPersonPrincipalName ?? '')
+                ?: trim($mail ?? '')
+                ?: '',
             mail: trim($mail ?? ''),
             data: $data,
         );
@@ -62,20 +62,12 @@ readonly class RemoteIdentity
         };
     }
 
-    /*
-     * Returns the eduPersonPrincipalName
-     */
-    public function principalName(): string
-    {
-        return $this->principalName;
-    }
-
     public function primaryEmail(): string
     {
         return $this->principalName;
     }
 
-    public function emailAlias(): ?string
+    public function emailAlias(): string
     {
         return $this->mail;
     }
