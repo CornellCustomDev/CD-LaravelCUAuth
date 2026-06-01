@@ -7,8 +7,10 @@ readonly class RemoteIdentity
     public function __construct(
         public string $idp,
         public string $uid,
+        public string $principalName = '',
         public string $displayName = '',
         public string $email = '',
+        private string $mail = '',
         public array $data = [],
     ) {}
 
@@ -26,12 +28,11 @@ readonly class RemoteIdentity
         return new RemoteIdentity(
             idp: $idp,
             uid: $uid,
+            principalName: trim($eduPersonPrincipalName ?? ''),
             displayName: $displayName
                 ?? $cn
                 ?? trim(($givenName ?? '').' '.($sn ?? '')),
-            email: $eduPersonPrincipalName
-                ?? $mail
-                ?? '',
+            mail: trim($mail ?? ''),
             data: $data,
         );
     }
@@ -46,6 +47,9 @@ readonly class RemoteIdentity
 
     /**
      * Provides an id that is unique across Cornell IdPs.
+     *
+     * @deprecated Use of uniqueUid() should be replaced with use of principalName() for a unique identifier
+     * across IdPs, and id() for an identifier within the IdP.
      */
     public function uniqueUid(): string
     {
@@ -55,12 +59,29 @@ readonly class RemoteIdentity
         };
     }
 
+    public function principalName(): string
+    {
+        return $this->principalName;
+    }
+
+    public function primaryEmail(): string
+    {
+        return $this->principalName;
+    }
+
+    public function emailAlias(): string
+    {
+        return $this->mail;
+    }
+
     /**
      * Returns the primary email (netid@cornell.edu|cwid@med.cornell.edu) if available, otherwise the alias email.
+     *
+     * @deprecated Use of email() should be replaced with primaryEmai() or emailAlias(), as appropriate.
      */
     public function email(): string
     {
-        return $this->email;
+        return $this->primaryEmail() ?: $this->emailAlias();
     }
 
     /**
@@ -73,11 +94,13 @@ readonly class RemoteIdentity
 
     public function isCornellIdP(): bool
     {
-        return str_contains($this->idp, 'cit.cornell.edu');
+        return str_contains($this->idp, 'cit.cornell.edu')
+            || str_contains($this->principalName, '@cornell.edu');
     }
 
     public function isWeillIdP(): bool
     {
-        return str_contains($this->idp, 'weill.cornell.edu');
+        return str_contains($this->idp, 'weill.cornell.edu')
+            || str_contains($this->principalName, '@med.cornell.edu');
     }
 }

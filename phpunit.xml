@@ -1,11 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    bootstrap="vendor/autoload.php"
+    backupGlobals="false"
+    beStrictAboutTestsThatDoNotTestAnything="false"
     colors="true"
-    testdox="true"
-    xsi:noNamespaceSchemaLocation="./vendor/phpunit/phpunit/phpunit.xsd"
+    processIsolation="false"
+    stopOnError="false"
+    stopOnFailure="false"
     cacheDirectory=".phpunit.cache"
+    backupStaticProperties="false"
+    testdox="true"
 >
     <source>
         <include>
