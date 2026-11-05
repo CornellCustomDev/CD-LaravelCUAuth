@@ -2,9 +2,11 @@
 
 namespace CornellCustomDev\LaravelStarterKit\CUAuth\Commands;
 
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use OneLogin\Saml2\IdPMetadataParser;
+use OneLogin\Saml2\Settings;
 
 class GenerateKeys extends Command
 {
@@ -60,6 +62,7 @@ class GenerateKeys extends Command
             if ($force || ! File::exists($idpSettingsPath)) {
                 $this->info("Downloading IDP settings for $idpKey...");
                 $idpSettings = $this->getIdpSettings($idpKey);
+                $this->validateIdpSettings($idpKey, $idpSettings);
                 File::put($idpSettingsPath, json_encode($idpSettings, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
             } else {
                 $this->info("IDP settings for $idpKey already exist.");
@@ -98,7 +101,29 @@ class GenerateKeys extends Command
     private function getIdpSettings(string $key): array|false
     {
         return app()->runningUnitTests()
-            ? ['x509cert' => "test-$key-idp-cert-contents"] // Placeholder content for testing
+            ? [ // Placeholder content for testing
+                'entityId' => "https://$key.test/idp",
+                'singleSignOnService' => ['url' => "https://$key.test/idp/sso"],
+                'x509cert' => "test-$key-idp-cert-contents",
+            ]
             : IdPMetadataParser::parseRemoteXML(config("cu-auth.idp_metadata_urls.$key"))['idp'];
+    }
+
+    /**
+     * Check the entityId, SSO URL, and signing certificate(s) with the PHP SAML Toolkit,
+     * so an IdP whose metadata cannot be used is not saved.
+     *
+     * @throws Exception
+     */
+    private function validateIdpSettings(string $key, array|false $idpSettings): void
+    {
+        $samlSettings = config('php-saml-toolkit');
+        $errors = is_array($idpSettings)
+            ? (new Settings($samlSettings, true))->checkIdPSettings([...$samlSettings, 'idp' => $idpSettings])
+            : ['idp_metadata_not_found'];
+        if (! empty($errors)) {
+            $metadataUrl = config("cu-auth.idp_metadata_urls.$key");
+            throw new Exception("Invalid IdP settings for $key from $metadataUrl: ".implode(', ', $errors));
+        }
     }
 }
