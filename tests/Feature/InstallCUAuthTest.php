@@ -6,7 +6,7 @@ use CornellCustomDev\LaravelStarterKit\CUAuth\CUAuthServiceProvider;
 use CornellCustomDev\LaravelStarterKit\CUAuth\Tests\TestCase;
 use Illuminate\Support\Facades\File;
 
-class InstallCUAuth extends TestCase
+class InstallCUAuthTest extends TestCase
 {
     protected function setUp(): void
     {
@@ -90,7 +90,7 @@ class InstallCUAuth extends TestCase
             ->assertSuccessful();
 
         $this->assertFileExists($idpCertPath);
-        $this->assertStringContainsString('test-idp-cert-contents', File::get($idpCertPath));
+        $this->assertStringContainsString('test-cornell-idp-cert-contents', File::get($idpCertPath));
 
         $this->assertFileExists($spKeyPath);
         $keyFile = File::get($spKeyPath);
@@ -104,7 +104,7 @@ class InstallCUAuth extends TestCase
 
         // Confirm we can get the certs via the config
         config(['php-saml-toolkit.idp.x509cert' => File::get("$basePath/storage/app/keys/idp_cert.pem")]);
-        $this->assertStringContainsString('test-idp-cert-contents', config('php-saml-toolkit.idp.x509cert'));
+        $this->assertStringContainsString('test-cornell-idp-cert-contents', config('php-saml-toolkit.idp.x509cert'));
     }
 
     public function testCanInstallWeillSamlCerts()
@@ -136,6 +136,29 @@ class InstallCUAuth extends TestCase
         // Confirm we can get the certs via the config
         config(['php-saml-toolkit.idp.x509cert' => File::get("$basePath/storage/app/keys/idp_cert.pem")]);
         $this->assertStringContainsString('test-weill-idp-cert-contents', config('php-saml-toolkit.idp.x509cert'));
+    }
+
+    public function testCanInstallDiscoveryIdpSettings()
+    {
+        $basePath = $this->applicationBasePath();
+        $cornellSettingsPath = "$basePath/storage/app/keys/idp_cornell.json";
+        $weillSettingsPath = "$basePath/storage/app/keys/idp_weill.json";
+        $idpCertPath = "$basePath/storage/app/keys/idp_cert.pem";
+        $this->assertFileDoesNotExist($cornellSettingsPath);
+        $this->assertFileDoesNotExist($weillSettingsPath);
+
+        config(['cu-auth.idp_discovery.enabled' => true]);
+        $this->artisan('cu-auth:generate-keys')
+            ->assertSuccessful();
+
+        $this->assertFileExists($cornellSettingsPath);
+        $this->assertStringContainsString('test-cornell-idp-cert-contents', File::get($cornellSettingsPath));
+
+        $this->assertFileExists($weillSettingsPath);
+        $this->assertStringContainsString('test-weill-idp-cert-contents', File::get($weillSettingsPath));
+
+        // The single-IdP cert is not used with discovery
+        $this->assertFileDoesNotExist($idpCertPath);
     }
 
     private function resetInstallFiles(): void

@@ -20,24 +20,55 @@ class GenerateKeys extends Command
         $certPath = config('cu-auth.cert-path');
         File::ensureDirectoryExists($certPath);
 
+        if (config('cu-auth.idp_discovery.enabled')) {
+            $this->storeDiscoveryIdpSettings($certPath, $force);
+        } else {
+            $this->storeIdpCert($certPath, $force, $weill);
+        }
+
+        $this->storeSpKeys($certPath, $force);
+
+        $this->info('Keys generated successfully.');
+    }
+
+    private function storeIdpCert(string $certPath, bool $force, bool $weill): void
+    {
+        $idpKey = $weill ? 'weill' : 'cornell';
         $idpCertPath = $certPath.'/idp_cert.pem';
         $idpMultiCertPath = $certPath.'/idp_cert_multi.json';
         if ($force || (! File::exists($idpCertPath) && ! File::exists($idpMultiCertPath))) {
-            // Remove any existing cert files
+            // Remove both cert files, since we don't know which one was previously used (single vs multi cert)
             File::exists($idpCertPath) && File::delete($idpCertPath);
             File::exists($idpMultiCertPath) && File::delete($idpMultiCertPath);
 
             $this->info('Downloading IDP certificate...');
-            $idpCertContents = $this->getIdpCert($weill);
-            if (! empty($idpCertContents['x509certMulti'])) {
-                File::put($idpMultiCertPath, json_encode($idpCertContents['x509certMulti'], JSON_PRETTY_PRINT));
+            $idpSettings = $this->getIdpSettings($idpKey);
+            if (! empty($idpSettings['x509certMulti'])) {
+                File::put($idpMultiCertPath, json_encode($idpSettings['x509certMulti'], JSON_PRETTY_PRINT));
             } else {
-                File::put($idpCertPath, $idpCertContents['x509cert']);
+                File::put($idpCertPath, $idpSettings['x509cert']);
             }
         } else {
             $this->info('IDP certificate already exists.');
         }
+    }
 
+    private function storeDiscoveryIdpSettings(string $certPath, bool $force): void
+    {
+        foreach (config('cu-auth.idp_discovery.idps', []) as $idpKey) {
+            $idpSettingsPath = $certPath.'/idp_'.$idpKey.'.json';
+            if ($force || ! File::exists($idpSettingsPath)) {
+                $this->info("Downloading IDP settings for $idpKey...");
+                $idpSettings = $this->getIdpSettings($idpKey);
+                File::put($idpSettingsPath, json_encode($idpSettings, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+            } else {
+                $this->info("IDP settings for $idpKey already exist.");
+            }
+        }
+    }
+
+    private function storeSpKeys(string $certPath, bool $force): void
+    {
         $spKeyPath = $certPath.'/sp_key.pem';
         $spCertPath = $certPath.'/sp_cert.pem';
         if ($force || ! File::exists($spKeyPath) || ! File::exists($spCertPath)) {
@@ -62,26 +93,12 @@ class GenerateKeys extends Command
         } else {
             $this->info('Service provider key pair already exists.');
         }
-
-        $this->info('Keys generated successfully.');
     }
 
-    private function getIdpCert(bool $weill): array|false
+    private function getIdpSettings(string $key): array|false
     {
-        if ($weill) {
-            $metadataUrl = app()->isProduction()
-                ? 'https://login.weill.cornell.edu/idp/saml2/idp/metadata.php'
-                : 'https://login-test.weill.cornell.edu/idp/saml2/idp/metadata.php';
-            $testContent = 'test-weill-idp-cert-contents';
-        } else {
-            $metadataUrl = app()->isProduction()
-                ? 'https://shibidp.cit.cornell.edu/idp/shibboleth'
-                : 'https://shibidp-test.cit.cornell.edu/idp/shibboleth';
-            $testContent = 'test-idp-cert-contents';
-        }
-
         return app()->runningUnitTests()
-            ? ['x509cert' => $testContent] // Placeholder content for testing
-            : IdPMetadataParser::parseRemoteXML($metadataUrl)['idp'];
+            ? ['x509cert' => "test-$key-idp-cert-contents"] // Placeholder content for testing
+            : IdPMetadataParser::parseRemoteXML(config("cu-auth.idp_metadata_urls.$key"))['idp'];
     }
 }

@@ -1,5 +1,7 @@
 <?php
 
+$is_production = env('APP_ENV') == 'production';
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -56,6 +58,51 @@ return [
     |
     */
     'cert-path' => storage_path(env('SAML_CERT_PATH', 'app/keys')),
+
+    /*
+    |--------------------------------------------------------------------------
+    | PHP-SAML IdP Metadata URLs
+    |--------------------------------------------------------------------------
+    |
+    | Metadata for the Cornell IdPs, used by `php artisan cu-auth:generate-keys`
+    | to retrieve IdP settings and certificates. Defaults to the production or
+    | test IdP based on APP_ENV.
+    |
+    */
+    'idp_metadata_urls' => [
+        'cornell' => env('SAML_METADATA_URL_CORNELL', $is_production
+            ? 'https://shibidp.cit.cornell.edu/idp/shibboleth'
+            : 'https://shibidp-test.cit.cornell.edu/idp/shibboleth'),
+        'weill' => env('SAML_METADATA_URL_WEILL', $is_production
+            ? 'https://login.weill.cornell.edu/idp/saml2/idp/metadata.php'
+            : 'https://login-test.weill.cornell.edu/idp/saml2/idp/metadata.php'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | PHP-SAML IdP Discovery
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, users are sent to a SAML discovery service (CIT idselect)
+    | to choose an IdP, and the 'idp' settings in config/php-saml-toolkit.php
+    | are replaced by the chosen IdP's settings. Logins may also skip the
+    | discovery service by linking to /sso/login?entityID=<IdP entityID>.
+    |
+    | 'idps' lists keys of 'idp_metadata_urls' above. Each IdP's settings
+    | (entityId, SSO URL, certs) are read from idp_<key>.json in the cert path,
+    | which `php artisan cu-auth:generate-keys` creates when discovery is enabled.
+    | Only these IdPs are allowed, and each must have a valid settings file.
+    |
+    */
+    'idp_discovery' => [
+        'enabled' => boolval(env('SAML_IDP_DISCOVERY', false)),
+
+        'url' => env('SAML_IDP_DISCOVERY_URL', $is_production
+            ? 'https://idselect.idm.cit.cornell.edu/idselect/select.html'
+            : 'https://idselect-test.idm.cit.cornell.edu/idselect/select.html'),
+
+        'idps' => ['cornell', 'weill'],
+    ],
 
     /*
     |--------------------------------------------------------------------------

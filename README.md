@@ -68,6 +68,23 @@ It is possible to have composer automatically install the keys on `composer inst
 
 The default location for the SAML keys and certs is in `storage/app/keys`. This location is configurable in the `config/cu-auth.php` file or by setting the `SAML_CERT_PATH` in `.env`.
 
+### Multiple IdPs (php-saml)
+
+By default, php-saml authenticates against a single IdP. To let users choose between Cornell NetID 
+and Weill CWID, enable IdP discovery:
+
+```dotenv
+# File: .env
+SAML_IDP_DISCOVERY=true
+# SAML_IDP_DISCOVERY_URL=https://idselect-test.idm.cit.cornell.edu/idselect/select.html
+# SAML_METADATA_URL_CORNELL=https://shibidp-test.cit.cornell.edu/idp/shibboleth
+# SAML_METADATA_URL_WEILL=https://login-test.weill.cornell.edu/idp/saml2/idp/metadata.php
+```
+
+
+For `apache-shib`, IdP selection is configured in mod_shib instead; see the `idselect` ApplicationOverride in
+[shibboleth configuration](SHIBBOLETH.md#shibboleth-with-multiple-idps).
+
 ---
 
 ### Local Testing (apache-shib)
