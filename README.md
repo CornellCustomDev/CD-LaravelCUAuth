@@ -68,6 +68,14 @@ It is possible to have composer automatically install the keys on `composer inst
 
 The default location for the SAML keys and certs is in `storage/app/keys`. This location is configurable in the `config/cu-auth.php` file or by setting the `SAML_CERT_PATH` in `.env`.
 
+### Stable SAML SP keys in container deployments
+
+Containers start with an empty filesystem, so `cu-auth:generate-keys` creates a new SP key pair on every deploy. The SP 
+certificate is part of the metadata registered with the IdP, so a new key pair breaks login until the registration is 
+updated. For a stable SP, generate the keys once and store `sp_key.pem` and `sp_cert.pem` as secrets. Write them to the 
+cert path (`storage/app/keys/` by default) before `cu-auth:generate-keys` runs, and the command keeps them and downloads 
+only the IdP certificate (or, with IdP discovery, the IdP settings files).
+
 ### Multiple IdPs (php-saml)
 
 By default, php-saml authenticates against a single IdP. To let users choose between Cornell NetID 
