@@ -3,9 +3,11 @@
 namespace CornellCustomDev\LaravelStarterKit\CUAuth\Managers;
 
 use CornellCustomDev\LaravelStarterKit\CUAuth\DataObjects\RemoteIdentity;
+use CornellCustomDev\LaravelStarterKit\CUAuth\Saml\IdpDiscovery;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use OneLogin\Saml2\Auth;
 use OneLogin\Saml2\AuthnRequest;
@@ -87,13 +89,30 @@ class SamlIdentityManager implements IdentityManager
         return $remoteIdentity;
     }
 
+    public function discoveryEnabled(): bool
+    {
+        return config('cu-auth.idp_discovery.enabled');
+    }
+
     /**
      * @throws Exception
      */
     public function getSsoUrl(string $redirectUrl): string
     {
+        $samlSettings = config('php-saml-toolkit');
+        if ($this->discoveryEnabled()) {
+            $idpEntityId = request()->query('entityID');
+            $idpSettings = $this->idpSettings($idpEntityId);
+
+            // No IdP chosen yet, so send the user to the discovery service.
+            if (empty($idpEntityId)) {
+                return $this->getDiscoveryUrl($redirectUrl);
+            }
+            $samlSettings['idp'] = $idpSettings;
+        }
+
         try {
-            $settings = new Settings(config('php-saml-toolkit'));
+            $settings = new Settings($samlSettings);
         } catch (Exception $e) {
             throw new Exception('Invalid SAML settings: '.$e->getMessage());
         }
@@ -106,6 +125,57 @@ class SamlIdentityManager implements IdentityManager
         ]);
 
         return $url.'?'.$query;
+    }
+
+    /**
+     * URL for the SAML discovery service (SAMLDS), which returns the user to
+     * the login route with the chosen IdP added as the entityID parameter.
+     *
+     * @throws Exception
+     */
+    public function getDiscoveryUrl(string $redirectUrl): string
+    {
+        try {
+            $settings = new Settings(config('php-saml-toolkit'), true);
+        } catch (Exception $e) {
+            throw new Exception('Invalid SAML settings: '.$e->getMessage());
+        }
+
+        $url = config('cu-auth.idp_discovery.url');
+        $query = Arr::query([
+            'entityID' => $settings->getSPData()['entityId'],
+            'return' => route('cu-auth.sso-login', ['redirect_url' => $redirectUrl]),
+        ]);
+
+        return $url.(str_contains($url, '?') ? '&' : '?').$query;
+    }
+
+    /**
+     * Settings for the discovery IdP with the given entityId, or null if no entityId is given.
+     * Every configured IdP's settings file is read and checked on each call.
+     *
+     * @throws Exception if any configured IdP is missing a valid settings file,
+     *                   or the entityId is not one of the configured IdPs
+     */
+    public function idpSettings(?string $idpEntityId): ?array
+    {
+        $settings = [];
+        $certPath = config('cu-auth.cert-path');
+        foreach (config('cu-auth.idp_discovery.idps', []) as $key) {
+            $file = $certPath.'/idp_'.$key.'.json';
+            $idpSettings = File::exists($file) ? json_decode(File::get($file), true) : null;
+            if (empty($idpSettings['entityId'])) {
+                throw new Exception("Missing or invalid IdP settings for $key. Run `php artisan cu-auth:generate-keys`.");
+            }
+            $settings[$idpSettings['entityId']] = $idpSettings;
+        }
+
+        // Wait to check until here so we validate all configured IdPs first.
+        if (empty($idpEntityId)) {
+            return null;
+        }
+
+        return $settings[$idpEntityId] ?? throw new Exception('Unknown identity provider.');
     }
 
     public function getSsoReturnUrl(Request $request): string
@@ -125,7 +195,9 @@ class SamlIdentityManager implements IdentityManager
     {
         try {
             $settings = new Settings(config('php-saml-toolkit'), true);
-            $metadata = $settings->getSPMetadata();
+            $metadata = $this->discoveryEnabled()
+                ? IdpDiscovery::getDiscoveryMetadata($settings, route('cu-auth.sso-login'))
+                : $settings->getSPMetadata();
             $errors = $settings->validateMetadata($metadata);
         } catch (Exception $e) {
             throw new Exception('Invalid SP metadata: '.$e->getMessage());
@@ -143,9 +215,19 @@ class SamlIdentityManager implements IdentityManager
      */
     public function retrieveIdentity(?array $attributes = null): RemoteIdentity
     {
+        $idpEntityId = config('php-saml-toolkit.idp.entityId');
+
         if (empty($attributes)) {
+            $samlSettings = config('php-saml-toolkit');
+            if ($this->discoveryEnabled()) {
+                // The issuer is not trusted yet; it only selects which IdP's settings
+                // (and certificate) the response must validate against.
+                $idpEntityId = IdpDiscovery::getResponseIssuer(new Settings($samlSettings, true), request()->post('SAMLResponse'));
+                $samlSettings['idp'] = $this->idpSettings($idpEntityId);
+            }
+
             try {
-                $auth = new Auth(settings: config('php-saml-toolkit'));
+                $auth = new Auth($samlSettings);
                 $auth->processResponse();
             } catch (Error|ValidationError $e) {
                 throw new Exception('SAML Response Error: '.$e->getMessage());
@@ -162,8 +244,7 @@ class SamlIdentityManager implements IdentityManager
             $attributes = $auth->getAttributesWithFriendlyName() ?: $auth->getAttributes();
         }
 
-        // Set IdP based on configured entityId
-        $idpEntityId = config('php-saml-toolkit.idp.entityId');
+        // Set IdP based on the entityId
         $idp = match (true) {
             Str::contains($idpEntityId, 'weill'),
             Str::contains($idpEntityId, 'med.cornell.edu') => 'weill.cornell.edu',
