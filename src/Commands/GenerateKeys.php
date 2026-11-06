@@ -117,9 +117,17 @@ class GenerateKeys extends Command
      */
     private function validateIdpSettings(string $key, array|false $idpSettings): void
     {
-        $samlSettings = config('php-saml-toolkit');
+        // Only the SP fields the toolkit requires, so missing SP keys (generated later) don't block this.
+        $sp = config('php-saml-toolkit.sp');
+        $samlSettings = [
+            'sp' => [
+                'entityId' => $sp['entityId'],
+                'assertionConsumerService' => $sp['assertionConsumerService'],
+            ],
+            'idp' => $idpSettings,
+        ];
         $errors = is_array($idpSettings)
-            ? (new Settings($samlSettings, true))->checkIdPSettings([...$samlSettings, 'idp' => $idpSettings])
+            ? (new Settings($samlSettings, true))->checkIdPSettings($samlSettings)
             : ['idp_metadata_not_found'];
         if (! empty($errors)) {
             $metadataUrl = config("cu-auth.idp_metadata_urls.$key");

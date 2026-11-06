@@ -161,6 +161,26 @@ class InstallCUAuthTest extends TestCase
         $this->assertFileDoesNotExist($idpCertPath);
     }
 
+    public function testCanInstallDiscoveryIdpSettingsWhenSpKeysAreRequired()
+    {
+        $basePath = $this->applicationBasePath();
+        $spKeyPath = "$basePath/storage/app/keys/sp_key.pem";
+        $this->assertFileDoesNotExist($spKeyPath);
+
+        // A fresh install whose SP config requires keys that do not exist yet
+        config([
+            'cu-auth.idp_discovery.enabled' => true,
+            'php-saml-toolkit.security.authnRequestsSigned' => true,
+            'php-saml-toolkit.sp.x509cert' => '',
+            'php-saml-toolkit.sp.privateKey' => '',
+        ]);
+        $this->artisan('cu-auth:generate-keys')
+            ->assertSuccessful();
+
+        $this->assertFileExists("$basePath/storage/app/keys/idp_cornell.json");
+        $this->assertFileExists($spKeyPath);
+    }
+
     private function resetInstallFiles(): void
     {
         $basePath = $this->applicationBasePath();
