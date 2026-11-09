@@ -7,9 +7,12 @@ use CornellCustomDev\LaravelStarterKit\CUAuth\Http\Controllers\AuthController;
 use CornellCustomDev\LaravelStarterKit\CUAuth\Listeners\AuthorizeUser;
 use CornellCustomDev\LaravelStarterKit\CUAuth\Managers\ShibIdentityManager;
 use CornellCustomDev\LaravelStarterKit\CUAuth\Middleware\CUAuth;
+use Illuminate\Contracts\Http\Kernel as HttpKernel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Str;
 use Orchestra\Testbench\Attributes\DefineRoute;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class ShibIdentityManagerTest extends FeatureTestCase
 {
@@ -202,6 +205,58 @@ class ShibIdentityManagerTest extends FeatureTestCase
         // Local user is authenticated.
         $this->actingAs($this->getTestUser());
         $this->get(route('test.require-cu-auth'))->assertOk();
+    }
+
+    /**
+     * Routes for testing CUAuth applied to the whole "web" middleware group,
+     * which also puts it in front of the package's own SSO routes.
+     */
+    protected static function usesCUAuthOnWebGroup($router): void
+    {
+        app(HttpKernel::class)->appendMiddlewareToGroup('web', CUAuth::class);
+        $router->get('/test/web', fn () => 'OK')->name('test.web')->middleware('web');
+    }
+
+    public static function ssoRouteProvider(): array
+    {
+        return [
+            'sso-login' => ['cu-auth.sso-login', ShibIdentityManager::SHIB_LOGIN_URL],
+            'sso-logout' => ['cu-auth.sso-logout', ShibIdentityManager::SHIB_LOGOUT_URL],
+            'sso-acs' => ['cu-auth.sso-acs', '/test/web'],
+            'sso-metadata' => ['cu-auth.sso-metadata', null],
+            'shibboleth-login (legacy)' => ['cu-auth.shibboleth-login', ShibIdentityManager::SHIB_LOGIN_URL],
+            'shibboleth-logout (legacy)' => ['cu-auth.shibboleth-logout', ShibIdentityManager::SHIB_LOGOUT_URL],
+        ];
+    }
+
+    /**
+     * SSO routes pass through CUAuth instead of looping back to the login route.
+     */
+    #[DataProvider('ssoRouteProvider')]
+    #[DefineRoute('usesCUAuthOnWebGroup')]
+    public function testSsoRoutesPassThroughCUAuth(string $routeName, ?string $expectedRedirectPath)
+    {
+        $url = Str::replaceFirst('http://', 'https://', route($routeName, ['redirect_url' => '/test/web']));
+
+        $response = $this->get($url);
+
+        // Reaching the AuthController means CUAuth let the request through.
+        if ($expectedRedirectPath === null) {
+            $response->assertNotFound()->assertSee('Metadata not available.');
+        } else {
+            $response->assertRedirect();
+            $this->assertSame($expectedRedirectPath, parse_url($response->headers->get('Location'), PHP_URL_PATH));
+        }
+    }
+
+    /**
+     * Other routes in the same middleware group are still protected.
+     */
+    #[DefineRoute('usesCUAuthOnWebGroup')]
+    public function testWebGroupRoutesAreProtectedByCUAuth()
+    {
+        $this->get('https://localhost/test/web')
+            ->assertRedirect(route('cu-auth.sso-login', ['redirect_url' => 'https://localhost/test/web']));
     }
 
     public function testRouteIsProtectedWithoutUserLookup()
