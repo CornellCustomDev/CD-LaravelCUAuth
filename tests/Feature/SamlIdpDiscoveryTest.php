@@ -5,6 +5,7 @@ namespace CornellCustomDev\LaravelStarterKit\CUAuth\Tests\Feature;
 use CornellCustomDev\LaravelStarterKit\CUAuth\Managers\IdentityManager;
 use CornellCustomDev\LaravelStarterKit\CUAuth\Managers\SamlIdentityManager;
 use CornellCustomDev\LaravelStarterKit\CUAuth\Saml\IdpDiscovery;
+use CornellCustomDev\LaravelStarterKit\CUAuth\Tests\Feature\Concerns\WritesIdpSettings;
 use Exception;
 use Illuminate\Support\Facades\File;
 use OneLogin\Saml2\Settings;
@@ -12,6 +13,8 @@ use PHPUnit\Framework\Attributes\DataProvider;
 
 class SamlIdpDiscoveryTest extends FeatureTestCase
 {
+    use WritesIdpSettings;
+
     private const CORNELL_IDP = 'https://cornell.test/idp';
 
     private const WEILL_IDP = 'https://weill.test/idp';
@@ -22,7 +25,7 @@ class SamlIdpDiscoveryTest extends FeatureTestCase
 
         $this->writeIdpSettings('cornell', self::CORNELL_IDP);
         $this->writeIdpSettings('weill', self::WEILL_IDP);
-        config(['cu-auth.idp_discovery.enabled' => true]);
+        config(['cu-auth.idp_selection.mode' => 'discovery']);
         $this->app->singleton(IdentityManager::class, fn () => new SamlIdentityManager);
     }
 
@@ -154,7 +157,7 @@ class SamlIdpDiscoveryTest extends FeatureTestCase
         $this->assertStringContainsString('idpdisc:DiscoveryResponse', $metadata);
         $this->assertStringContainsString('Location="'.route('cu-auth.sso-login').'"', $metadata);
 
-        config(['cu-auth.idp_discovery.enabled' => false]);
+        config(['cu-auth.idp_selection.mode' => 'single']);
         $this->assertStringNotContainsString('DiscoveryResponse', (new SamlIdentityManager)->getMetadata());
     }
 
@@ -164,20 +167,6 @@ class SamlIdpDiscoveryTest extends FeatureTestCase
 
         $this->expectExceptionMessage('signMetadata is not supported with IdP discovery.');
         (new SamlIdentityManager)->getMetadata();
-    }
-
-    /**
-     * Write IdP settings in the shape SamlIdentityManager reads from idp_<key>.json.
-     */
-    private function writeIdpSettings(string $key, string $entityId): void
-    {
-        $certPath = config('cu-auth.cert-path');
-        File::ensureDirectoryExists($certPath);
-        File::put("$certPath/idp_$key.json", json_encode([
-            'entityId' => $entityId,
-            'singleSignOnService' => ['url' => "$entityId/sso"],
-            'x509cert' => "test-$key-idp-cert-contents",
-        ]));
     }
 
     /**

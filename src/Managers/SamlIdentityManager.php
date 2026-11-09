@@ -17,6 +17,13 @@ use OneLogin\Saml2\ValidationError;
 
 class SamlIdentityManager implements IdentityManager
 {
+    // Values for config('cu-auth.idp_selection.mode')
+    public const IDP_SELECTION_SINGLE = 'single';
+
+    public const IDP_SELECTION_DISCOVERY = 'discovery';
+
+    public const IDP_SELECTION_PAGE = 'page';
+
     // Shibboleth fields generally available from either CIT or Weill IdPs.
     public const SAML_FIELDS = [
         // staff|student|...
@@ -89,9 +96,32 @@ class SamlIdentityManager implements IdentityManager
         return $remoteIdentity;
     }
 
-    public function discoveryEnabled(): bool
+    /**
+     * How users get an IdP: IDP_SELECTION_SINGLE (the one IdP in config/php-saml-toolkit.php,
+     * also used when no mode is set), IDP_SELECTION_DISCOVERY, or IDP_SELECTION_PAGE.
+     *
+     * @throws Exception if the configured mode is not one of these
+     */
+    public function idpSelectionMode(): string
     {
-        return config('cu-auth.idp_discovery.enabled');
+        $mode = config('cu-auth.idp_selection.mode') ?: self::IDP_SELECTION_SINGLE;
+        $modes = [self::IDP_SELECTION_SINGLE, self::IDP_SELECTION_DISCOVERY, self::IDP_SELECTION_PAGE];
+        if (! in_array($mode, $modes, true)) {
+            throw new Exception("Unknown IdP selection mode \"$mode\". Use ".implode(', ', $modes).'.');
+        }
+
+        return $mode;
+    }
+
+    /**
+     * Whether users choose between the IdPs in config('cu-auth.idp_selection.idps'),
+     * rather than using the single IdP in config/php-saml-toolkit.php.
+     *
+     * @throws Exception if the configured mode is not recognized
+     */
+    public function selectsIdp(): bool
+    {
+        return $this->idpSelectionMode() !== self::IDP_SELECTION_SINGLE;
     }
 
     /**
@@ -100,13 +130,16 @@ class SamlIdentityManager implements IdentityManager
     public function getSsoUrl(string $redirectUrl): string
     {
         $samlSettings = config('php-saml-toolkit');
-        if ($this->discoveryEnabled()) {
+        $mode = $this->idpSelectionMode();
+        if ($mode !== self::IDP_SELECTION_SINGLE) {
             $idpEntityId = request()->query('entityID');
             $idpSettings = $this->idpSettings($idpEntityId);
 
-            // No IdP chosen yet, so send the user to the discovery service.
+            // No IdP chosen yet, so send the user to choose one.
             if (empty($idpEntityId)) {
-                return $this->getDiscoveryUrl($redirectUrl);
+                return $mode === self::IDP_SELECTION_PAGE
+                    ? $this->getSelectionPageUrl($redirectUrl)
+                    : $this->getDiscoveryUrl($redirectUrl);
             }
             $samlSettings['idp'] = $idpSettings;
         }
@@ -135,13 +168,9 @@ class SamlIdentityManager implements IdentityManager
      */
     public function getDiscoveryUrl(string $redirectUrl): string
     {
-        try {
-            $settings = new Settings(config('php-saml-toolkit'), true);
-        } catch (Exception $e) {
-            throw new Exception('Invalid SAML settings: '.$e->getMessage());
-        }
+        $settings = $this->spSettings();
 
-        $url = config('cu-auth.idp_discovery.url');
+        $url = config('cu-auth.idp_selection.discovery_url');
         $query = Arr::query([
             'entityID' => $settings->getSPData()['entityId'],
             'return' => route('cu-auth.sso-login', ['redirect_url' => $redirectUrl]),
@@ -151,7 +180,50 @@ class SamlIdentityManager implements IdentityManager
     }
 
     /**
-     * Settings for the discovery IdP with the given entityId, or null if no entityId is given.
+     * URL for the IdP selection page, which links to the login route with
+     * each IdP's entityID parameter.
+     *
+     * @throws Exception
+     */
+    public function getSelectionPageUrl(string $redirectUrl): string
+    {
+        // Check the SP settings before the user chooses an IdP, not after.
+        $this->spSettings();
+
+        return route('cu-auth.sso-select', ['redirect_url' => $redirectUrl]);
+    }
+
+    /**
+     * The configured IdPs to choose from, in config order. Each has its display
+     * info from config and a login URL that goes straight to that IdP.
+     *
+     * @return list<array{key: string, entityId: string, url: string, label: string, info_text: ?string, info_url: ?string}>
+     *
+     * @throws Exception if any configured IdP is missing a valid settings file
+     */
+    public function idpChoices(string $redirectUrl): array
+    {
+        $choices = [];
+        foreach ($this->configuredIdpSettings() as $key => $idpSettings) {
+            $display = config("cu-auth.idp_selection.idps.$key");
+            $choices[] = [
+                'key' => $key,
+                'entityId' => $idpSettings['entityId'],
+                'url' => route('cu-auth.sso-login', [
+                    'entityID' => $idpSettings['entityId'],
+                    'redirect_url' => $redirectUrl,
+                ]),
+                'label' => $display['label'] ?? $key,
+                'info_text' => $display['info_text'] ?? null,
+                'info_url' => $display['info_url'] ?? null,
+            ];
+        }
+
+        return $choices;
+    }
+
+    /**
+     * Settings for the IdP with the given entityId, or null if no entityId is given.
      * Every configured IdP's settings file is read and checked on each call.
      *
      * @throws Exception if any configured IdP is missing a valid settings file,
@@ -159,16 +231,7 @@ class SamlIdentityManager implements IdentityManager
      */
     public function idpSettings(?string $idpEntityId): ?array
     {
-        $settings = [];
-        $certPath = config('cu-auth.cert-path');
-        foreach (config('cu-auth.idp_discovery.idps', []) as $key) {
-            $file = $certPath.'/idp_'.$key.'.json';
-            $idpSettings = File::exists($file) ? json_decode(File::get($file), true) : null;
-            if (empty($idpSettings['entityId'])) {
-                throw new Exception("Missing or invalid IdP settings for $key. Run `php artisan cu-auth:generate-keys`.");
-            }
-            $settings[$idpSettings['entityId']] = $idpSettings;
-        }
+        $settings = array_column($this->configuredIdpSettings(), null, 'entityId');
 
         // Wait to check until here so we validate all configured IdPs first.
         if (empty($idpEntityId)) {
@@ -176,6 +239,41 @@ class SamlIdentityManager implements IdentityManager
         }
 
         return $settings[$idpEntityId] ?? throw new Exception('Unknown identity provider.');
+    }
+
+    /**
+     * Settings for every configured IdP, read from idp_<key>.json and keyed by <key>.
+     *
+     * @throws Exception if any configured IdP is missing a valid settings file
+     */
+    private function configuredIdpSettings(): array
+    {
+        $settings = [];
+        $certPath = config('cu-auth.cert-path');
+        foreach (array_keys(config('cu-auth.idp_selection.idps', [])) as $key) {
+            $file = $certPath.'/idp_'.$key.'.json';
+            $idpSettings = File::exists($file) ? json_decode(File::get($file), true) : null;
+            if (empty($idpSettings['entityId'])) {
+                throw new Exception("Missing or invalid IdP settings for $key. Run `php artisan cu-auth:generate-keys`.");
+            }
+            $settings[$key] = $idpSettings;
+        }
+
+        return $settings;
+    }
+
+    /**
+     * PHP SAML Toolkit settings, checking only the SP settings.
+     *
+     * @throws Exception
+     */
+    private function spSettings(): Settings
+    {
+        try {
+            return new Settings(config('php-saml-toolkit'), true);
+        } catch (Exception $e) {
+            throw new Exception('Invalid SAML settings: '.$e->getMessage());
+        }
     }
 
     public function getSsoReturnUrl(Request $request): string
@@ -195,7 +293,7 @@ class SamlIdentityManager implements IdentityManager
     {
         try {
             $settings = new Settings(config('php-saml-toolkit'), true);
-            $metadata = $this->discoveryEnabled()
+            $metadata = $this->idpSelectionMode() === self::IDP_SELECTION_DISCOVERY
                 ? IdpDiscovery::getDiscoveryMetadata($settings, route('cu-auth.sso-login'))
                 : $settings->getSPMetadata();
             $errors = $settings->validateMetadata($metadata);
@@ -219,7 +317,7 @@ class SamlIdentityManager implements IdentityManager
 
         if (empty($attributes)) {
             $samlSettings = config('php-saml-toolkit');
-            if ($this->discoveryEnabled()) {
+            if ($this->selectsIdp()) {
                 // The issuer is not trusted yet; it only selects which IdP's settings
                 // (and certificate) the response must validate against.
                 $idpEntityId = IdpDiscovery::getResponseIssuer(new Settings($samlSettings, true), request()->post('SAMLResponse'));

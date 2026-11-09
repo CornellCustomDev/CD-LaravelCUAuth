@@ -3,6 +3,7 @@
 namespace CornellCustomDev\LaravelStarterKit\CUAuth\Http\Controllers;
 
 use CornellCustomDev\LaravelStarterKit\CUAuth\Managers\IdentityManager;
+use CornellCustomDev\LaravelStarterKit\CUAuth\Managers\SamlIdentityManager;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
@@ -29,6 +30,28 @@ class AuthController extends BaseController
         $ssoUrl = $this->identityManager->getSsoUrl($redirectUrl);
 
         return redirect($ssoUrl);
+    }
+
+    /**
+     * The IdP selection page, for php-saml with idp_selection.mode = page.
+     */
+    public function select(Request $request)
+    {
+        $identityManager = $this->identityManager;
+        if (! $identityManager instanceof SamlIdentityManager
+            || $identityManager->idpSelectionMode() !== SamlIdentityManager::IDP_SELECTION_PAGE) {
+            abort(404);
+        }
+
+        $redirectUrl = $request->query('redirect_url', '/');
+
+        if ($identityManager->getIdentity()) {
+            return redirect()->to($redirectUrl);
+        }
+
+        return view(config('cu-auth.idp_selection.view'), [
+            'redirectUrl' => $redirectUrl,
+        ]);
     }
 
     public function logout(Request $request)

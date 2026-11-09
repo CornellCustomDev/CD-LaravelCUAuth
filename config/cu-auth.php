@@ -80,28 +80,53 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | PHP-SAML IdP Discovery
+    | PHP-SAML IdP Selection
     |--------------------------------------------------------------------------
     |
-    | When enabled, users are sent to a SAML discovery service (CIT idselect)
-    | to choose an IdP, and the 'idp' settings in config/php-saml-toolkit.php
-    | are replaced by the chosen IdP's settings. Logins may also skip the
-    | discovery service by linking to /sso/login?entityID=<IdP entityID>.
+    | How php-saml gets the IdP to log in with. 'mode' is one of:
+    | - single: the one IdP in config/php-saml-toolkit.php (the default)
+    | - discovery: users choose an IdP at a SAML discovery service (CIT idselect)
+    | - page: users choose an IdP on this package's selection page (/sso/select)
     |
-    | 'idps' lists keys of 'idp_metadata_urls' above. Each IdP's settings
-    | (entityId, SSO URL, certs) are read from idp_<key>.json in the cert path,
-    | which `php artisan cu-auth:generate-keys` creates when discovery is enabled.
-    | Only these IdPs are allowed, and each must have a valid settings file.
+    | With discovery or page, the 'idp' settings in config/php-saml-toolkit.php
+    | are replaced by the chosen IdP's settings, and logins may skip the choice
+    | by linking to /sso/login?entityID=<IdP entityID>. The rest of this
+    | section only applies to those modes.
+    |
+    | 'idps' is keyed by the 'idp_metadata_urls' keys above. Each IdP's
+    | settings (entityId, SSO URL, certs) are read from idp_<key>.json in the
+    | cert path, which `php artisan cu-auth:generate-keys` creates in discovery
+    | or page mode. Only these IdPs are allowed, and each must have a valid
+    | settings file. Each IdP's label and info link are shown on the selection
+    | page.
+    |
+    | 'view' is the view the selection page renders. The default is a
+    | standalone page styled after CIT idselect. To show the choice in your
+    | site's layout, point this at your own view and include
+    | <x-cu-auth::idp-selection /> in it.
     |
     */
-    'idp_discovery' => [
-        'enabled' => boolval(env('SAML_IDP_DISCOVERY', false)),
+    'idp_selection' => [
+        'mode' => env('SAML_IDP_SELECTION', 'single'),
 
-        'url' => env('SAML_IDP_DISCOVERY_URL', $is_production
+        'view' => env('SAML_IDP_SELECTION_VIEW', 'cu-auth::select'),
+
+        'discovery_url' => env('SAML_IDP_DISCOVERY_URL', $is_production
             ? 'https://idselect.idm.cit.cornell.edu/idselect/select.html'
             : 'https://idselect-test.idm.cit.cornell.edu/idselect/select.html'),
 
-        'idps' => ['cornell', 'weill'],
+        'idps' => [
+            'cornell' => [
+                'label' => 'Cornell NetID',
+                'info_text' => 'More information about NetID',
+                'info_url' => 'https://netid.cornell.edu/',
+            ],
+            'weill' => [
+                'label' => 'Weill Cornell Medicine (CWID)',
+                'info_text' => 'More information about WCM CWID',
+                'info_url' => 'https://its.weill.cornell.edu/services/accounts-and-access/center-wide-id',
+            ],
+        ],
     ],
 
     /*
