@@ -182,8 +182,6 @@ class SamlIdentityManager implements IdentityManager
     /**
      * URL for the SAML discovery service (SAMLDS), which returns the user to
      * the login route with the chosen IdP added as the entityID parameter.
-     *
-     * @throws Exception
      */
     public function getDiscoveryUrl(string $redirectUrl, string $entityId): string
     {
