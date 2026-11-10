@@ -32,6 +32,7 @@ class IdpSelection extends Component
         /** @var SamlIdentityManager $identityManager */
         $identityManager = app(IdentityManager::class);
         $redirectUrl = $this->redirectUrl ?? request()->query('redirect_url', '/');
+        $redirectUrl = is_string($redirectUrl) ? $redirectUrl : '/';
 
         return view('cu-auth::components.idp-selection', [
             'idps' => $identityManager->idpChoices($redirectUrl),

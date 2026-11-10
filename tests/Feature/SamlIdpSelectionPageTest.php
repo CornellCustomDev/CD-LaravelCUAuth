@@ -209,6 +209,14 @@ class SamlIdpSelectionPageTest extends FeatureTestCase
             ->assertSee(route('cu-auth.sso-login', ['entityID' => self::CORNELL_IDP, 'redirect_url' => '/home']));
     }
 
+    public function testComponentIgnoresNonStringRedirectUrl()
+    {
+        request()->query->set('redirect_url', ['home']);
+
+        $this->blade('<x-cu-auth::idp-selection />')
+            ->assertSee(route('cu-auth.sso-login', ['entityID' => self::CORNELL_IDP, 'redirect_url' => '/']));
+    }
+
     public function testComponentHeadingCanBeChangedOrLeftOut()
     {
         $this->blade('<x-cu-auth::idp-selection heading="Sign in" />')
