@@ -14,6 +14,13 @@ class InstallCUAuthTest extends TestCase
         $this->resetInstallFiles();
     }
 
+    protected function tearDown(): void
+    {
+        // Published views would override the package views in later tests.
+        File::deleteDirectory($this->applicationBasePath().'/resources/views/vendor/cu-auth');
+        parent::tearDown();
+    }
+
     public function testCanInstallCUAuthConfigFiles()
     {
         $basePath = $this->applicationBasePath();
@@ -147,7 +154,7 @@ class InstallCUAuthTest extends TestCase
         $this->assertFileDoesNotExist($cornellSettingsPath);
         $this->assertFileDoesNotExist($weillSettingsPath);
 
-        config(['cu-auth.idp_discovery.enabled' => true]);
+        config(['cu-auth.idp_selection_mode' => 'discovery']);
         $this->artisan('cu-auth:generate-keys')
             ->assertSuccessful();
 
@@ -169,7 +176,7 @@ class InstallCUAuthTest extends TestCase
 
         // A fresh install whose SP config requires keys that do not exist yet
         config([
-            'cu-auth.idp_discovery.enabled' => true,
+            'cu-auth.idp_selection_mode' => 'discovery',
             'php-saml-toolkit.security.authnRequestsSigned' => true,
             'php-saml-toolkit.sp.x509cert' => '',
             'php-saml-toolkit.sp.privateKey' => '',
@@ -181,6 +188,22 @@ class InstallCUAuthTest extends TestCase
         $this->assertFileExists($spKeyPath);
     }
 
+    public function testCanPublishViews()
+    {
+        $viewPath = $this->applicationBasePath().'/resources/views/vendor/cu-auth';
+
+        $this->artisan(
+            command: 'vendor:publish',
+            parameters: [
+                '--tag' => 'starterkit:'.CUAuthServiceProvider::INSTALL_VIEWS_TAG,
+                '--force' => true,
+            ])
+            ->assertSuccessful();
+
+        $this->assertFileExists("$viewPath/select.blade.php");
+        $this->assertFileExists("$viewPath/components/idp-selection.blade.php");
+    }
+
     private function resetInstallFiles(): void
     {
         $basePath = $this->applicationBasePath();
@@ -189,5 +212,6 @@ class InstallCUAuthTest extends TestCase
         File::delete("$basePath/config/cu-auth.php");
         File::delete("$basePath/config/php-saml-toolkit.php");
         File::deleteDirectory("$basePath/storage/app/keys");
+        File::deleteDirectory("$basePath/resources/views/vendor/cu-auth");
     }
 }

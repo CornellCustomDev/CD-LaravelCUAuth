@@ -2,6 +2,7 @@
 
 namespace CornellCustomDev\LaravelStarterKit\CUAuth\Commands;
 
+use CornellCustomDev\LaravelStarterKit\CUAuth\Managers\SamlIdentityManager;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
@@ -22,8 +23,9 @@ class GenerateKeys extends Command
         $certPath = config('cu-auth.cert-path');
         File::ensureDirectoryExists($certPath);
 
-        if (config('cu-auth.idp_discovery.enabled')) {
-            $this->storeDiscoveryIdpSettings($certPath, $force);
+        $identityManager = new SamlIdentityManager;
+        if ($identityManager->selectsIdp()) {
+            $this->storeSelectionIdpSettings($certPath, $force, $identityManager->idpKeys());
         } else {
             $this->storeIdpCert($certPath, $force, $weill);
         }
@@ -55,9 +57,9 @@ class GenerateKeys extends Command
         }
     }
 
-    private function storeDiscoveryIdpSettings(string $certPath, bool $force): void
+    private function storeSelectionIdpSettings(string $certPath, bool $force, array $idpKeys): void
     {
-        foreach (config('cu-auth.idp_discovery.idps', []) as $idpKey) {
+        foreach ($idpKeys as $idpKey) {
             $idpSettingsPath = $certPath.'/idp_'.$idpKey.'.json';
             if ($force || ! File::exists($idpSettingsPath)) {
                 $this->info("Downloading IDP settings for $idpKey...");
