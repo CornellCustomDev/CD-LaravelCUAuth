@@ -104,10 +104,15 @@ class SamlIdentityManager implements IdentityManager
      */
     public function idpSelectionMode(): string
     {
-        $mode = config('cu-auth.idp_selection_mode') ?: self::IDP_SELECTION_SINGLE;
-        $modes = [self::IDP_SELECTION_SINGLE, self::IDP_SELECTION_DISCOVERY, self::IDP_SELECTION_PAGE];
-        if (! in_array($mode, $modes, true)) {
-            throw new Exception("Unknown IdP selection mode \"$mode\". Use ".implode(', ', $modes).'.');
+        $mode = config('cu-auth.idp_selection_mode');
+
+        // Default to single if not set.
+        if (blank($mode)) {
+            return self::IDP_SELECTION_SINGLE;
+        }
+
+        if (! in_array($mode, [self::IDP_SELECTION_SINGLE, self::IDP_SELECTION_DISCOVERY, self::IDP_SELECTION_PAGE], true)) {
+            throw new Exception('Invalid IdP selection mode.');
         }
 
         return $mode;
@@ -116,8 +121,6 @@ class SamlIdentityManager implements IdentityManager
     /**
      * Whether users choose between the IdPs in config('cu-auth.idp_selection.idps'),
      * rather than using the single IdP in config/php-saml-toolkit.php.
-     *
-     * @throws Exception if the configured mode is not recognized
      */
     public function selectsIdp(): bool
     {

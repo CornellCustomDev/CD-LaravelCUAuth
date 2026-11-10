@@ -23,7 +23,6 @@ class GenerateKeys extends Command
         $certPath = config('cu-auth.cert-path');
         File::ensureDirectoryExists($certPath);
 
-        // Also rejects an unknown mode before anything is downloaded.
         if ((new SamlIdentityManager)->selectsIdp()) {
             $this->storeSelectionIdpSettings($certPath, $force);
         } else {

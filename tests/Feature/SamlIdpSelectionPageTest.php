@@ -64,15 +64,27 @@ class SamlIdpSelectionPageTest extends FeatureTestCase
         ];
     }
 
-    public function testUnknownModeFails()
+    #[DataProvider('invalidModes')]
+    public function testInvalidModeFails(mixed $mode)
     {
-        config(['cu-auth.idp_selection_mode' => 'pages']);
+        config(['cu-auth.idp_selection_mode' => $mode]);
 
         $this->get(route('cu-auth.sso-login'))
             ->assertServerError();
 
-        $this->expectExceptionMessage('Unknown IdP selection mode "pages"');
+        $this->expectExceptionMessage('Invalid IdP selection mode.');
         (new SamlIdentityManager)->idpSelectionMode();
+    }
+
+    public static function invalidModes(): array
+    {
+        return [
+            'typo' => ['pages'],
+            // SAML_IDP_SELECTION=false is read as boolean false, which is not a mode.
+            'false' => [false],
+            'zero' => [0],
+            'zero string' => ['0'],
+        ];
     }
 
     public function testSelectionPageLinksToEachIdp()
