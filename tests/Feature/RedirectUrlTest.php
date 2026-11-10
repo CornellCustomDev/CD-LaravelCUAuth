@@ -3,9 +3,11 @@
 namespace CornellCustomDev\LaravelStarterKit\CUAuth\Tests\Feature;
 
 use CornellCustomDev\LaravelStarterKit\CUAuth\Managers\IdentityManager;
+use CornellCustomDev\LaravelStarterKit\CUAuth\Managers\SamlIdentityManager;
 use CornellCustomDev\LaravelStarterKit\CUAuth\Managers\ShibIdentityManager;
 use Illuminate\Support\Uri;
 use Illuminate\Testing\TestResponse;
+use Mockery;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
@@ -62,6 +64,19 @@ class RedirectUrlTest extends FeatureTestCase
     {
         $response = $this->withServerVariables(['REMOTE_USER_TEST' => 'abc123'])
             ->get(route('cu-auth.sso-acs', array_filter(['redirect_url' => $url])));
+
+        $this->assertRedirectsLocally($response, $expected);
+    }
+
+    #[DataProvider('redirectUrlProvider')]
+    public function testSamlAcsRelayState(?string $url, string $expected)
+    {
+        // Skip SAML response verification; this test covers only the RelayState redirect.
+        $identityManager = Mockery::mock(SamlIdentityManager::class)->makePartial();
+        $identityManager->shouldReceive('storeIdentity')->andReturnNull();
+        $this->app->instance(IdentityManager::class, $identityManager);
+
+        $response = $this->post(route('cu-auth.sso-acs'), array_filter(['RelayState' => $url]));
 
         $this->assertRedirectsLocally($response, $expected);
     }
