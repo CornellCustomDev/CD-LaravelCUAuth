@@ -43,7 +43,7 @@ class AuthController extends BaseController
             abort(404);
         }
 
-        $redirectUrl = $request->query('redirect_url', '/');
+        $redirectUrl = $this->localUrlOnly($request->query->getString('redirect_url'));
 
         if ($identityManager->getIdentity()) {
             return redirect()->to($redirectUrl);

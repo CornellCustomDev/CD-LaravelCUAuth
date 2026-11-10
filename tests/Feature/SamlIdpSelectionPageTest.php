@@ -32,7 +32,7 @@ class SamlIdpSelectionPageTest extends FeatureTestCase
     public function testLoginRedirectsToSelectionPage()
     {
         $this->get(route('cu-auth.sso-login', ['redirect_url' => '/home']))
-            ->assertRedirect(route('cu-auth.sso-select', ['redirect_url' => '/home']));
+            ->assertRedirect(route('cu-auth.sso-select', ['redirect_url' => 'https://localhost/home']));
     }
 
     public function testInvalidSpSettingsFailBeforeSelectionPage()
@@ -93,8 +93,8 @@ class SamlIdpSelectionPageTest extends FeatureTestCase
             ->assertOk()
             ->assertSee('Select Your Cornell Login')
             ->assertSeeInOrder(['Cornell NetID', 'Weill Cornell Medicine (CWID)'])
-            ->assertSee(route('cu-auth.sso-login', ['entityID' => self::CORNELL_IDP, 'redirect_url' => '/home']))
-            ->assertSee(route('cu-auth.sso-login', ['entityID' => self::WEILL_IDP, 'redirect_url' => '/home']))
+            ->assertSee(route('cu-auth.sso-login', ['entityID' => self::CORNELL_IDP, 'redirect_url' => 'https://localhost/home']))
+            ->assertSee(route('cu-auth.sso-login', ['entityID' => self::WEILL_IDP, 'redirect_url' => 'https://localhost/home']))
             ->assertSee('https://netid.cornell.edu/')
             ->assertSee('More information about WCM CWID');
     }
@@ -108,7 +108,7 @@ class SamlIdpSelectionPageTest extends FeatureTestCase
         $this->get(route('cu-auth.sso-select'))
             ->assertOk()
             ->assertSee('Weill only')
-            ->assertSee(route('cu-auth.sso-login', ['entityID' => self::WEILL_IDP, 'redirect_url' => '/']))
+            ->assertSee(route('cu-auth.sso-login', ['entityID' => self::WEILL_IDP, 'redirect_url' => 'https://localhost']))
             ->assertDontSee('Cornell NetID')
             ->assertDontSee('More information');
     }
@@ -123,7 +123,15 @@ class SamlIdpSelectionPageTest extends FeatureTestCase
     {
         $this->withSession(['remoteIdentity' => RemoteIdentity::fromData(idp: 'cit.cornell.edu', uid: 'abc123')])
             ->get(route('cu-auth.sso-select', ['redirect_url' => '/home']))
-            ->assertRedirect('/home');
+            ->assertRedirect('https://localhost/home');
+    }
+
+    public function testSelectionPageRejectsExternalRedirectUrl()
+    {
+        $this->get(route('cu-auth.sso-select', ['redirect_url' => 'https://evil.example.com/']))
+            ->assertOk()
+            ->assertSee(route('cu-auth.sso-login', ['entityID' => self::CORNELL_IDP, 'redirect_url' => 'https://localhost']))
+            ->assertDontSee('evil.example.com');
     }
 
     public function testBrokenIdpSettingsFailSelectionPage()
