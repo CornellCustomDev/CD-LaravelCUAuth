@@ -71,7 +71,7 @@ class ShibIdentityManagerTest extends FeatureTestCase
         $this->addCUAuthenticatedListener();
         $request = $this->getApacheAuthRequest('new-user');
         $request->query->set('redirect_url', '/test');
-        $redirect_url = route('cu-auth.sso-acs', ['redirect_url' => '/test']);
+        $redirect_url = route('cu-auth.sso-acs', ['redirect_url' => secure_url('/test')]);
 
         $response = (new AuthController(new ShibIdentityManager))
             ->login($request);

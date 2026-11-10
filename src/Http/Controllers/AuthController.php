@@ -7,6 +7,8 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Uri;
+use InvalidArgumentException;
 
 class AuthController extends BaseController
 {
@@ -16,7 +18,7 @@ class AuthController extends BaseController
 
     public function login(Request $request)
     {
-        $redirectUrl = $request->query('redirect_url', '/');
+        $redirectUrl = $this->localUrlOnly($request->query->getString('redirect_url'));
 
         $remoteIdentity = $this->identityManager->getIdentity();
         if ($remoteIdentity) {
@@ -35,7 +37,7 @@ class AuthController extends BaseController
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        $returnUrl = $request->query('return', '/');
+        $returnUrl = $this->localUrlOnly($request->query->getString('return'));
 
         $sloUrl = $this->identityManager->getSloUrl($returnUrl);
 
@@ -51,7 +53,7 @@ class AuthController extends BaseController
         }
 
         // Redirect to the originally intended URL
-        $returnUrl = $this->identityManager->getSsoReturnUrl($request);
+        $returnUrl = $this->localUrlOnly($this->identityManager->getSsoReturnUrl($request));
 
         return redirect()->to($returnUrl);
     }
@@ -67,5 +69,30 @@ class AuthController extends BaseController
         return response($metadata)->withHeaders([
             'Content-Type' => 'text/xml',
         ]);
+    }
+
+    /**
+     * The given URL as an absolute URL on this site, to prevent open redirects; otherwise the fallback URL.
+     */
+    protected function localUrlOnly(string $url, string $fallback = '/'): string
+    {
+        $fallbackUrl = secure_url($fallback);
+        if (blank($url)) {
+            return $fallbackUrl;
+        }
+
+        $absoluteUrl = secure_url($url);
+        try {
+            // Unparseable URLs get the fallback URL
+            $absoluteUri = Uri::of($absoluteUrl);
+        } catch (InvalidArgumentException) {
+            return $fallbackUrl;
+        }
+
+        $isValidLocalUrl = $absoluteUri->scheme() === 'https'
+            && $absoluteUri->host() === Uri::of(secure_url('/'))->host()
+            && $absoluteUri->user() === null;
+
+        return $isValidLocalUrl ? $absoluteUrl : $fallbackUrl;
     }
 }
