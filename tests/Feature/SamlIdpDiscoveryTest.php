@@ -25,7 +25,7 @@ class SamlIdpDiscoveryTest extends FeatureTestCase
 
         $this->writeIdpSettings('cornell', self::CORNELL_IDP);
         $this->writeIdpSettings('weill', self::WEILL_IDP);
-        config(['cu-auth.idp_selection.mode' => 'discovery']);
+        config(['cu-auth.idp_selection_mode' => 'discovery']);
         $this->app->singleton(IdentityManager::class, fn () => new SamlIdentityManager);
     }
 
@@ -157,7 +157,7 @@ class SamlIdpDiscoveryTest extends FeatureTestCase
         $this->assertStringContainsString('idpdisc:DiscoveryResponse', $metadata);
         $this->assertStringContainsString('Location="'.route('cu-auth.sso-login').'"', $metadata);
 
-        config(['cu-auth.idp_selection.mode' => 'single']);
+        config(['cu-auth.idp_selection_mode' => 'single']);
         $this->assertStringNotContainsString('DiscoveryResponse', (new SamlIdentityManager)->getMetadata());
     }
 

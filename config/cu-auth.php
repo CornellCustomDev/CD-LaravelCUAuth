@@ -80,41 +80,28 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | PHP-SAML IdP Selection Mode
+    |--------------------------------------------------------------------------
+    |
+    | How users get the IdP to log in with. Options are:
+    | - single: the one IdP in config/php-saml-toolkit.php
+    | - discovery: choose at a SAML discovery service (CIT idselect)
+    | - page: choose on this package's selection page (/sso/select)
+    |
+    */
+    'idp_selection_mode' => env('SAML_IDP_SELECTION', 'single'),
+
+    /*
+    |--------------------------------------------------------------------------
     | PHP-SAML IdP Selection
     |--------------------------------------------------------------------------
     |
-    | How php-saml gets the IdP to log in with. 'mode' is one of:
-    | - single: the one IdP in config/php-saml-toolkit.php (the default)
-    | - discovery: users choose an IdP at a SAML discovery service (CIT idselect)
-    | - page: users choose an IdP on this package's selection page (/sso/select)
-    |
-    | With discovery or page, the 'idp' settings in config/php-saml-toolkit.php
-    | are replaced by the chosen IdP's settings, and logins may skip the choice
-    | by linking to /sso/login?entityID=<IdP entityID>. The rest of this
-    | section only applies to those modes.
-    |
-    | 'idps' is keyed by the 'idp_metadata_urls' keys above. Each IdP's
-    | settings (entityId, SSO URL, certs) are read from idp_<key>.json in the
-    | cert path, which `php artisan cu-auth:generate-keys` creates in discovery
-    | or page mode. Only these IdPs are allowed, and each must have a valid
-    | settings file. Each IdP's label and info link are shown on the selection
-    | page.
-    |
-    | 'view' is the view the selection page renders. The default is a
-    | standalone page styled after CIT idselect. To show the choice in your
-    | site's layout, point this at your own view and include
-    | <x-cu-auth::idp-selection /> in it.
+    | Used by the discovery and page modes. 'idps' are the IdPs users can
+    | choose, keyed by 'idp_metadata_urls' above. 'view' is the view rendered
+    | at /sso/select.
     |
     */
     'idp_selection' => [
-        'mode' => env('SAML_IDP_SELECTION', 'single'),
-
-        'view' => env('SAML_IDP_SELECTION_VIEW', 'cu-auth::select'),
-
-        'discovery_url' => env('SAML_IDP_DISCOVERY_URL', $is_production
-            ? 'https://idselect.idm.cit.cornell.edu/idselect/select.html'
-            : 'https://idselect-test.idm.cit.cornell.edu/idselect/select.html'),
-
         'idps' => [
             'cornell' => [
                 'label' => 'Cornell NetID',
@@ -127,6 +114,12 @@ return [
                 'info_url' => 'https://its.weill.cornell.edu/services/accounts-and-access/center-wide-id',
             ],
         ],
+
+        'view' => env('SAML_IDP_SELECTION_VIEW', 'cu-auth::select'),
+
+        'discovery_url' => env('SAML_IDP_DISCOVERY_URL', $is_production
+            ? 'https://idselect.idm.cit.cornell.edu/idselect/select.html'
+            : 'https://idselect-test.idm.cit.cornell.edu/idselect/select.html'),
     ],
 
     /*

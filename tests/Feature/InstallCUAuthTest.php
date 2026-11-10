@@ -154,7 +154,7 @@ class InstallCUAuthTest extends TestCase
         $this->assertFileDoesNotExist($cornellSettingsPath);
         $this->assertFileDoesNotExist($weillSettingsPath);
 
-        config(['cu-auth.idp_selection.mode' => 'discovery']);
+        config(['cu-auth.idp_selection_mode' => 'discovery']);
         $this->artisan('cu-auth:generate-keys')
             ->assertSuccessful();
 
@@ -176,7 +176,7 @@ class InstallCUAuthTest extends TestCase
 
         // A fresh install whose SP config requires keys that do not exist yet
         config([
-            'cu-auth.idp_selection.mode' => 'discovery',
+            'cu-auth.idp_selection_mode' => 'discovery',
             'php-saml-toolkit.security.authnRequestsSigned' => true,
             'php-saml-toolkit.sp.x509cert' => '',
             'php-saml-toolkit.sp.privateKey' => '',

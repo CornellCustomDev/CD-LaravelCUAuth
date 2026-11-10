@@ -33,7 +33,7 @@ class AuthController extends BaseController
     }
 
     /**
-     * The IdP selection page, for php-saml with idp_selection.mode = page.
+     * The IdP selection page, for php-saml with idp_selection_mode = page.
      */
     public function select(Request $request)
     {

@@ -17,7 +17,7 @@ use OneLogin\Saml2\ValidationError;
 
 class SamlIdentityManager implements IdentityManager
 {
-    // Values for config('cu-auth.idp_selection.mode')
+    // Values for config('cu-auth.idp_selection_mode')
     public const IDP_SELECTION_SINGLE = 'single';
 
     public const IDP_SELECTION_DISCOVERY = 'discovery';
@@ -104,7 +104,7 @@ class SamlIdentityManager implements IdentityManager
      */
     public function idpSelectionMode(): string
     {
-        $mode = config('cu-auth.idp_selection.mode') ?: self::IDP_SELECTION_SINGLE;
+        $mode = config('cu-auth.idp_selection_mode') ?: self::IDP_SELECTION_SINGLE;
         $modes = [self::IDP_SELECTION_SINGLE, self::IDP_SELECTION_DISCOVERY, self::IDP_SELECTION_PAGE];
         if (! in_array($mode, $modes, true)) {
             throw new Exception("Unknown IdP selection mode \"$mode\". Use ".implode(', ', $modes).'.');

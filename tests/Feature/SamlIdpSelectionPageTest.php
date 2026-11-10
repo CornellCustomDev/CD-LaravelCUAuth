@@ -25,7 +25,7 @@ class SamlIdpSelectionPageTest extends FeatureTestCase
 
         $this->writeIdpSettings('cornell', self::CORNELL_IDP);
         $this->writeIdpSettings('weill', self::WEILL_IDP);
-        config(['cu-auth.idp_selection.mode' => 'page']);
+        config(['cu-auth.idp_selection_mode' => 'page']);
         $this->app->singleton(IdentityManager::class, fn () => new SamlIdentityManager);
     }
 
@@ -46,7 +46,7 @@ class SamlIdpSelectionPageTest extends FeatureTestCase
     #[DataProvider('singleModes')]
     public function testSingleModeIsTheDefault(?string $mode)
     {
-        config(['cu-auth.idp_selection.mode' => $mode]);
+        config(['cu-auth.idp_selection_mode' => $mode]);
         $manager = new SamlIdentityManager;
 
         $this->assertSame(SamlIdentityManager::IDP_SELECTION_SINGLE, $manager->idpSelectionMode());
@@ -66,7 +66,7 @@ class SamlIdpSelectionPageTest extends FeatureTestCase
 
     public function testUnknownModeFails()
     {
-        config(['cu-auth.idp_selection.mode' => 'pages']);
+        config(['cu-auth.idp_selection_mode' => 'pages']);
 
         $this->get(route('cu-auth.sso-login'))
             ->assertServerError();
@@ -125,7 +125,7 @@ class SamlIdpSelectionPageTest extends FeatureTestCase
     #[DataProvider('otherModes')]
     public function testSelectionPageNotFoundOutsidePageMode(?string $mode)
     {
-        config(['cu-auth.idp_selection.mode' => $mode]);
+        config(['cu-auth.idp_selection_mode' => $mode]);
 
         $this->get(route('cu-auth.sso-select'))
             ->assertNotFound();
@@ -201,7 +201,7 @@ class SamlIdpSelectionPageTest extends FeatureTestCase
 
     public function testComponentWorksInDiscoveryMode()
     {
-        config(['cu-auth.idp_selection.mode' => 'discovery']);
+        config(['cu-auth.idp_selection_mode' => 'discovery']);
 
         $this->blade('<x-cu-auth::idp-selection />')
             ->assertSee(route('cu-auth.sso-login', ['entityID' => self::WEILL_IDP, 'redirect_url' => '/']));
@@ -209,10 +209,10 @@ class SamlIdpSelectionPageTest extends FeatureTestCase
 
     public function testComponentRendersNothingInSingleMode()
     {
-        config(['cu-auth.idp_selection.mode' => 'single']);
+        config(['cu-auth.idp_selection_mode' => 'single']);
         $this->assertSame('', trim((string) $this->blade('<x-cu-auth::idp-selection />')));
 
-        config(['cu-auth.idp_selection.mode' => 'page']);
+        config(['cu-auth.idp_selection_mode' => 'page']);
         $this->app->singleton(IdentityManager::class, fn () => new ShibIdentityManager);
         $this->assertSame('', trim((string) $this->blade('<x-cu-auth::idp-selection />')));
     }
