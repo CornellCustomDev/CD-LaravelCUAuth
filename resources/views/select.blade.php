@@ -1,17 +1,10 @@
-{{--
-    Standalone IdP selection page (/sso/select), styled after CIT idselect, with
-    self-contained CSS. To show the choice in your site's layout instead, set
-    cu-auth.idp_selection.view to your own view and include <x-cu-auth::idp-selection />.
-
-    Data: $redirectUrl, where to go after login.
---}}
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex">
-    <title>Select Your Cornell Login | {{ config('app.name') }}</title>
+    <title>{{ config('cu-auth.idp_selection.page.heading') }} | {{ config('app.name') }}</title>
     <style>
         *, *::before, *::after {
             box-sizing: border-box;
@@ -76,7 +69,6 @@
             top: 8px;
         }
 
-        /* Header: red bar with the Cornell logo, then a gray band with the page title */
         .cu-auth-brand {
             background: #b31b1b;
         }
@@ -122,7 +114,6 @@
             }
         }
 
-        /* Main */
         .cu-auth-main {
             flex: 1;
             padding: 1.25em 0 2.5em;
@@ -133,7 +124,6 @@
             }
         }
 
-        /* Footer */
         .cu-auth-footer {
             padding: 20px 0;
             background: #292929;
@@ -180,14 +170,14 @@
     </div>
     <div class="cu-auth-title">
         <div class="cu-auth-container">
-            <h1>Select Your Cornell Login</h1>
+            <h1>{{ config('cu-auth.idp_selection.page.heading') }}</h1>
         </div>
     </div>
 </header>
 
 <main id="main" class="cu-auth-main" tabindex="-1">
     <div class="cu-auth-container">
-        <x-cu-auth::idp-selection :heading="null" :redirect-url="$redirectUrl"/>
+        <x-cu-auth::idp-selection heading="" :redirect-url="$redirectUrl"/>
     </div>
 </main>
 

@@ -96,30 +96,37 @@ return [
     | PHP-SAML IdP Selection
     |--------------------------------------------------------------------------
     |
-    | Used by the discovery and page modes. 'idps' are the IdPs users can
-    | choose, keyed by 'idp_metadata_urls' above. 'view' is the view rendered
-    | at /sso/select.
+    | Settings for each idp_selection_mode. 'idps' are the IdPs users can
+    | choose, keyed by 'idp_metadata_urls' above.
     |
     */
     'idp_selection' => [
-        'idps' => [
-            'cornell' => [
-                'label' => 'Cornell NetID',
-                'info_text' => 'More information about NetID',
-                'info_url' => 'https://netid.cornell.edu/',
-            ],
-            'weill' => [
-                'label' => 'Weill Cornell Medicine (CWID)',
-                'info_text' => 'More information about WCM CWID',
-                'info_url' => 'https://its.weill.cornell.edu/services/accounts-and-access/center-wide-id',
-            ],
+        'discovery' => [
+            'idps' => ['cornell', 'weill'],
+
+            'url' => env('SAML_IDP_DISCOVERY_URL', $is_production
+                ? 'https://idselect.idm.cit.cornell.edu/idselect/select.html'
+                : 'https://idselect-test.idm.cit.cornell.edu/idselect/select.html'),
         ],
 
-        'view' => env('SAML_IDP_SELECTION_VIEW', 'cu-auth::select'),
+        'page' => [
+            'idps' => [
+                'cornell' => [
+                    'label' => 'Cornell NetID',
+                    'info_text' => 'More information about NetID',
+                    'info_url' => 'https://netid.cornell.edu/',
+                ],
+                'weill' => [
+                    'label' => 'Weill Cornell Medicine (CWID)',
+                    'info_text' => 'More information about WCM CWID',
+                    'info_url' => 'https://its.weill.cornell.edu/services/accounts-and-access/center-wide-id',
+                ],
+            ],
 
-        'discovery_url' => env('SAML_IDP_DISCOVERY_URL', $is_production
-            ? 'https://idselect.idm.cit.cornell.edu/idselect/select.html'
-            : 'https://idselect-test.idm.cit.cornell.edu/idselect/select.html'),
+            'heading' => env('SAML_IDP_SELECTION_HEADING', 'Select Your Cornell Login'),
+
+            'view' => env('SAML_IDP_SELECTION_VIEW', 'cu-auth::select'),
+        ],
     ],
 
     /*

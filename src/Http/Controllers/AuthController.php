@@ -49,7 +49,7 @@ class AuthController extends BaseController
             return redirect()->to($redirectUrl);
         }
 
-        return view(config('cu-auth.idp_selection.view'), [
+        return view(config('cu-auth.idp_selection.page.view'), [
             'redirectUrl' => $redirectUrl,
         ]);
     }

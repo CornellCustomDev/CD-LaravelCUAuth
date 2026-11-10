@@ -93,8 +93,8 @@ SAML_IDP_SELECTION=page # single | discovery | page
 ```
 
 With `discovery` or `page`, run `php artisan cu-auth:generate-keys` to download each IdP's settings. Links to 
-`/sso/login?entityID=<IdP entityID>` skip the choice and go straight to that IdP. The IdPs offered, with their labels 
-and info links, are `idp_selection.idps` in `config/cu-auth.php`.
+`/sso/login?entityID=<IdP entityID>` skip the choice and go straight to that IdP. The IdPs offered are 
+`idp_selection.discovery.idps` or `idp_selection.page.idps` (with their labels and info links) in `config/cu-auth.php`.
 
 #### The selection page in your site's layout
 
@@ -104,7 +104,7 @@ create a view that wraps the `<x-cu-auth::idp-selection />` component in your la
 ```blade
 {{-- File: resources/views/auth/select-login.blade.php --}}
 <x-layouts.app title="Select Your Cornell Login">
-    <x-cu-auth::idp-selection :heading="null" />
+    <x-cu-auth::idp-selection heading="" />
 </x-layouts.app>
 ```
 
@@ -115,10 +115,11 @@ Then point the selection page at it:
 SAML_IDP_SELECTION_VIEW=auth.select-login
 ```
 
-The component renders a "Select Your Cornell Login" heading (`heading="..."` to change it, `:heading="null"` to leave 
+The component renders a heading from `cu-auth.idp_selection.page.heading`, "Select Your Cornell Login" by default (set 
+`SAML_IDP_SELECTION_HEADING` to change it everywhere, `heading="..."` to change it for one use, or `heading=""` to leave 
 it out when your layout already shows it) and one button per IdP. The buttons return to the `redirect_url` query 
 parameter after login, or `/`; pass `redirect-url="..."` to use another URL. The component can be used on any page, 
-including in `discovery` mode, and renders nothing in `single` mode.
+and renders nothing outside `page` mode.
 
 To change the package's views themselves, publish them to `resources/views/vendor/cu-auth`:
 

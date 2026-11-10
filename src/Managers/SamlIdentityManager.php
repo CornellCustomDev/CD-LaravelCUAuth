@@ -119,12 +119,25 @@ class SamlIdentityManager implements IdentityManager
     }
 
     /**
-     * Whether users choose between the IdPs in config('cu-auth.idp_selection.idps'),
-     * rather than using the single IdP in config/php-saml-toolkit.php.
+     * Whether users choose between IdPs, rather than using the single IdP in config/php-saml-toolkit.php.
      */
     public function selectsIdp(): bool
     {
         return $this->idpSelectionMode() !== self::IDP_SELECTION_SINGLE;
+    }
+
+    /**
+     * Keys of the IdPs users can choose in the current mode.
+     *
+     * @return list<string>
+     */
+    public function idpKeys(): array
+    {
+        return match ($this->idpSelectionMode()) {
+            self::IDP_SELECTION_DISCOVERY => config('cu-auth.idp_selection.discovery.idps', []),
+            self::IDP_SELECTION_PAGE => array_keys(config('cu-auth.idp_selection.page.idps', [])),
+            default => [],
+        };
     }
 
     /**
@@ -173,7 +186,7 @@ class SamlIdentityManager implements IdentityManager
     {
         $settings = $this->spSettings();
 
-        $url = config('cu-auth.idp_selection.discovery_url');
+        $url = config('cu-auth.idp_selection.discovery.url');
         $query = Arr::query([
             'entityID' => $settings->getSPData()['entityId'],
             'return' => route('cu-auth.sso-login', ['redirect_url' => $redirectUrl]),
@@ -200,7 +213,7 @@ class SamlIdentityManager implements IdentityManager
      * The configured IdPs to choose from, in config order. Each has its display
      * info from config and a login URL that goes straight to that IdP.
      *
-     * @return list<array{key: string, entityId: string, url: string, label: string, info_text: ?string, info_url: ?string}>
+     * @return list<array{url: string, label: string, info_text: ?string, info_url: ?string}>
      *
      * @throws Exception if any configured IdP is missing a valid settings file
      */
@@ -208,10 +221,8 @@ class SamlIdentityManager implements IdentityManager
     {
         $choices = [];
         foreach ($this->configuredIdpSettings() as $key => $idpSettings) {
-            $display = config("cu-auth.idp_selection.idps.$key");
+            $display = config("cu-auth.idp_selection.page.idps.$key");
             $choices[] = [
-                'key' => $key,
-                'entityId' => $idpSettings['entityId'],
                 'url' => route('cu-auth.sso-login', [
                     'entityID' => $idpSettings['entityId'],
                     'redirect_url' => $redirectUrl,
@@ -253,7 +264,7 @@ class SamlIdentityManager implements IdentityManager
     {
         $settings = [];
         $certPath = config('cu-auth.cert-path');
-        foreach (array_keys(config('cu-auth.idp_selection.idps', [])) as $key) {
+        foreach ($this->idpKeys() as $key) {
             $file = $certPath.'/idp_'.$key.'.json';
             $idpSettings = File::exists($file) ? json_decode(File::get($file), true) : null;
             if (empty($idpSettings['entityId'])) {

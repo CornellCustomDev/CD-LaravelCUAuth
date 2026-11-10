@@ -101,7 +101,7 @@ class SamlIdpSelectionPageTest extends FeatureTestCase
 
     public function testSelectionPageUsesConfiguredIdps()
     {
-        config(['cu-auth.idp_selection.idps' => [
+        config(['cu-auth.idp_selection.page.idps' => [
             'weill' => ['label' => 'Weill only'],
         ]]);
 
@@ -171,7 +171,7 @@ class SamlIdpSelectionPageTest extends FeatureTestCase
     public function testSelectionPageCanUseAppView()
     {
         View::addLocation(__DIR__.'/views');
-        config(['cu-auth.idp_selection.view' => 'app-select']);
+        config(['cu-auth.idp_selection.page.view' => 'app-select']);
 
         $this->get(route('cu-auth.sso-select', ['redirect_url' => '/home']))
             ->assertOk()
@@ -214,22 +214,30 @@ class SamlIdpSelectionPageTest extends FeatureTestCase
         $this->blade('<x-cu-auth::idp-selection heading="Sign in" />')
             ->assertSee('>Sign in</h2>', false);
 
-        $this->blade('<x-cu-auth::idp-selection :heading="null" />')
+        $this->blade('<x-cu-auth::idp-selection heading="" />')
             ->assertDontSee('<h2', false)
             ->assertSee('Cornell NetID');
     }
 
-    public function testComponentWorksInDiscoveryMode()
+    public function testHeadingComesFromConfig()
     {
-        config(['cu-auth.idp_selection_mode' => 'discovery']);
+        config(['cu-auth.idp_selection.page.heading' => 'Sign in to Example']);
 
         $this->blade('<x-cu-auth::idp-selection />')
-            ->assertSee(route('cu-auth.sso-login', ['entityID' => self::WEILL_IDP, 'redirect_url' => '/']));
+            ->assertSee('>Sign in to Example</h2>', false);
+
+        $this->get(route('cu-auth.sso-select'))
+            ->assertSee('<title>Sign in to Example | ', false)
+            ->assertSee('<h1>Sign in to Example</h1>', false)
+            ->assertDontSee('<h2', false);
     }
 
-    public function testComponentRendersNothingInSingleMode()
+    public function testComponentRendersNothingOutsidePageMode()
     {
         config(['cu-auth.idp_selection_mode' => 'single']);
+        $this->assertSame('', trim((string) $this->blade('<x-cu-auth::idp-selection />')));
+
+        config(['cu-auth.idp_selection_mode' => 'discovery']);
         $this->assertSame('', trim((string) $this->blade('<x-cu-auth::idp-selection />')));
 
         config(['cu-auth.idp_selection_mode' => 'page']);

@@ -1,10 +1,3 @@
-{{--
-    <x-cu-auth::idp-selection /> renders this view with:
-    - $heading: heading text, or null for none
-    - $idps: list of ['key', 'entityId', 'url', 'label', 'info_text', 'info_url'] from SamlIdentityManager::idpChoices()
-
-    The heading takes the site's own heading styles. The buttons are styled after CIT idselect.
---}}
 @once
 <style>
     .cu-auth-idp-selection .cu-auth-idps {
@@ -39,7 +32,6 @@
         -moz-osx-font-smoothing: grayscale;
     }
     @media (min-width: 834px) {
-        /* Wider than idselect's 390px so the longest label fits on one line in Georgia, the fallback for freight-text-pro. */
         .cu-auth-idp-selection a.cu-auth-idp-button {
             max-width: 420px;
             font-size: 24px;
