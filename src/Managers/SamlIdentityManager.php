@@ -18,14 +18,14 @@ use OneLogin\Saml2\ValidationError;
 class SamlIdentityManager implements IdentityManager
 {
     // Values for config('cu-auth.idp_selection_mode')
-    public const IDP_SELECTION_SINGLE = 'single';
+    public const string IDP_SELECTION_SINGLE = 'single';
 
-    public const IDP_SELECTION_DISCOVERY = 'discovery';
+    public const string IDP_SELECTION_DISCOVERY = 'discovery';
 
-    public const IDP_SELECTION_PAGE = 'page';
+    public const string IDP_SELECTION_PAGE = 'page';
 
     // Shibboleth fields generally available from either CIT or Weill IdPs.
-    public const SAML_FIELDS = [
+    public const array SAML_FIELDS = [
         // staff|student|...
         'eduPersonPrimaryAffiliation' => 'urn:oid:1.3.6.1.4.1.5923.1.1.1.5',
 
@@ -153,9 +153,12 @@ class SamlIdentityManager implements IdentityManager
 
             // No IdP chosen yet, so send the user to choose one.
             if (empty($idpEntityId)) {
+                // Check the SP settings before the user chooses an IdP, not after.
+                $spSettings = $this->spSettings();
+
                 return $mode === self::IDP_SELECTION_PAGE
                     ? $this->getSelectionPageUrl($redirectUrl)
-                    : $this->getDiscoveryUrl($redirectUrl);
+                    : $this->getDiscoveryUrl($redirectUrl, $spSettings->getSPData()['entityId']);
             }
             $samlSettings['idp'] = $idpSettings;
         }
@@ -182,13 +185,11 @@ class SamlIdentityManager implements IdentityManager
      *
      * @throws Exception
      */
-    public function getDiscoveryUrl(string $redirectUrl): string
+    public function getDiscoveryUrl(string $redirectUrl, string $entityId): string
     {
-        $settings = $this->spSettings();
-
         $url = config('cu-auth.idp_selection.discovery.url');
         $query = Arr::query([
-            'entityID' => $settings->getSPData()['entityId'],
+            'entityID' => $entityId,
             'return' => route('cu-auth.sso-login', ['redirect_url' => $redirectUrl]),
         ]);
 
@@ -198,14 +199,9 @@ class SamlIdentityManager implements IdentityManager
     /**
      * URL for the IdP selection page, which links to the login route with
      * each IdP's entityID parameter.
-     *
-     * @throws Exception
      */
     public function getSelectionPageUrl(string $redirectUrl): string
     {
-        // Check the SP settings before the user chooses an IdP, not after.
-        $this->spSettings();
-
         return route('cu-auth.sso-select', ['redirect_url' => $redirectUrl]);
     }
 

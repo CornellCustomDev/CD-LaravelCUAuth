@@ -188,7 +188,9 @@
             <li><a href="https://privacy.cornell.edu/">University Privacy</a></li>
         </ul>
         <ul>
-            <li><a href="mailto:web-accessibility@cornell.edu">Web Accessibility Assistance</a></li>
+            <li>
+                <a href="https://accessibility.cornell.edu/information-technology/web-accessibility/web-accessibility-assistance/">Web Accessibility Assistance</a>
+            </li>
         </ul>
     </div>
 </footer>

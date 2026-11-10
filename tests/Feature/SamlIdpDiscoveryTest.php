@@ -64,7 +64,7 @@ class SamlIdpDiscoveryTest extends FeatureTestCase
             ->assertServerError();
 
         $this->expectExceptionMessage('Invalid SAML settings');
-        (new SamlIdentityManager)->getDiscoveryUrl('/home');
+        (new SamlIdentityManager)->getSsoUrl('/home');
     }
 
     #[DataProvider('brokenIdpSettings')]

@@ -38,8 +38,12 @@ class AuthController extends BaseController
     public function select(Request $request)
     {
         $identityManager = $this->identityManager;
-        if (! $identityManager instanceof SamlIdentityManager
-            || $identityManager->idpSelectionMode() !== SamlIdentityManager::IDP_SELECTION_PAGE) {
+        if (! $this->identityManager instanceof SamlIdentityManager) {
+            abort(404);
+        }
+
+        /** @var SamlIdentityManager $identityManager */
+        if ($identityManager->idpSelectionMode() !== SamlIdentityManager::IDP_SELECTION_PAGE) {
             abort(404);
         }
 
