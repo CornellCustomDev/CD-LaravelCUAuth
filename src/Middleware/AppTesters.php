@@ -34,6 +34,11 @@ class AppTesters
             return $next($request);
         }
 
+        // Make sure we are using HTTPS.
+        if (! $request->secure()) {
+            return redirect()->secure($request->getRequestUri());
+        }
+
         // SSO routes need to pass through so a tester can log in.
         if ($request->routeIs('cu-auth.sso-*', 'cu-auth.shibboleth-*')) {
             return $next($request);
@@ -48,6 +53,11 @@ class AppTesters
             // If requiring a local user, attempt to log in the user so they can be checked as a tester.
             if (config('cu-auth.require_local_user')) {
                 event(new CUAuthenticated);
+
+                // If the authenticated user is still not logged in, return a 403.
+                if (! auth()->check()) {
+                    return $this->forbidden();
+                }
             }
         }
 
@@ -62,6 +72,11 @@ class AppTesters
             return $next($request);
         }
 
+        return $this->forbidden();
+    }
+
+    private function forbidden(): Response
+    {
         if (app()->runningInConsole()) {
             return response('Forbidden', Response::HTTP_FORBIDDEN);
         }
