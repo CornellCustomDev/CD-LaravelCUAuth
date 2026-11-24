@@ -217,6 +217,9 @@ REQUIRE_CU_AUTH=true
 This applies in any environment it is set, including production. To limit a non-production site to specific users, also set
 `APP_TESTERS`. Routes outside the `web` middleware group are not affected.
 
+Combining Laravel's `auth` middleware with CUAuth on a route is not supported as a way to log in SSO users: `auth` runs
+before CUAuth, so a visitor without a local session is sent to the app's login route instead of SSO.
+
 
 ## AppTesters
 

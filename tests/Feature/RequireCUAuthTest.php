@@ -2,6 +2,7 @@
 
 namespace CornellCustomDev\LaravelStarterKit\CUAuth\Tests\Feature;
 
+use CornellCustomDev\LaravelStarterKit\CUAuth\Managers\ShibIdentityManager;
 use Orchestra\Testbench\Attributes\DefineEnvironment;
 
 class RequireCUAuthTest extends FeatureTestCase
@@ -62,7 +63,10 @@ class RequireCUAuthTest extends FeatureTestCase
         config(['cu-auth.app_testers' => 'test-user']);
 
         // The SSO login route is not forbidden, so a tester can log in.
-        $this->get(route('cu-auth.sso-login'))->assertRedirect();
+        $response = $this->get('https://localhost/sso/login');
+
+        $response->assertRedirect();
+        $this->assertStringStartsWith('https://localhost'.ShibIdentityManager::SHIB_LOGIN_URL, $response->headers->get('Location'));
     }
 
     #[DefineEnvironment('requireCUAuthInProduction')]
