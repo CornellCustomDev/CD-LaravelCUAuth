@@ -140,6 +140,30 @@ class SamlIdentityManagerTest extends FeatureTestCase
         $this->assertEquals('netid@cornell.edu', $remoteIdentity->email());
     }
 
+    public function testRemoteUserOverrideIdentity()
+    {
+        config(['cu-auth.remote_user_override' => 'netid']);
+        $this->app->detectEnvironment(fn () => 'local');
+
+        $remoteIdentity = (new SamlIdentityManager)->getIdentity();
+
+        $this->assertEquals('netid', $remoteIdentity->id());
+        $this->assertEquals('netid@cornell.edu', $remoteIdentity->principalName());
+        $this->assertEquals('cit.cornell.edu', $remoteIdentity->idp);
+        $this->assertSame($remoteIdentity, session('remoteIdentity'));
+    }
+
+    public function testRemoteUserOverrideIsIgnoredInProduction()
+    {
+        config(['cu-auth.remote_user_override' => 'netid']);
+        $this->app->detectEnvironment(fn () => 'production');
+
+        $this->assertNull((new SamlIdentityManager)->getIdentity());
+
+        // Leave production so test teardown does not ask to confirm database changes.
+        $this->app->detectEnvironment(fn () => 'local');
+    }
+
     public function testAuthorizeUser()
     {
         config(['php-saml-toolkit.idp.entityId' => 'https://login-test.weill.cornell.edu/idp/shibboleth']);

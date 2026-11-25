@@ -55,11 +55,32 @@ class AppTestersTest extends FeatureTestCase
         Config::set('app.env', 'local');
         Config::set('cu-auth.app_testers_field', 'id');
         Config::set('cu-auth.app_testers', 'test-user');
-        Auth::shouldReceive('check')->andReturn(false);
 
         $response = (new AppTesters(new ShibIdentityManager))->handle(new Request, fn () => response('OK'));
 
         // If there is no logged-in user, they should not be able to use the app.
+        $this->assertTrue($response->isForbidden());
+    }
+
+    public function testHandleWithRemoteIdentityTester()
+    {
+        Config::set('app.env', 'local');
+        Config::set('cu-auth.app_testers', 'test-user');
+        Config::set('cu-auth.remote_user_override', 'test-user');
+
+        $response = (new AppTesters(new ShibIdentityManager))->handle(new Request, fn () => response('OK'));
+
+        $this->assertTrue($response->isOk());
+    }
+
+    public function testHandleWithRemoteIdentityNonTester()
+    {
+        Config::set('app.env', 'local');
+        Config::set('cu-auth.app_testers', 'test-user');
+        Config::set('cu-auth.remote_user_override', 'not-test-user');
+
+        $response = (new AppTesters(new ShibIdentityManager))->handle(new Request, fn () => response('OK'));
+
         $this->assertTrue($response->isForbidden());
     }
 
